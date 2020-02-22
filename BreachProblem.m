@@ -576,7 +576,7 @@ classdef BreachProblem < BreachStatus
                     n = length(u);  % dimension of the problem
                     % the following are meaningful default values
                     npoint = 1;   % number of random start points to be generated
-                    nreq = (n+6);     % no. of points to be generated in each call to SNOBFIT
+                    nreq = (n+6)/2;     % no. of points to be generated in each call to SNOBFIT
                     if nargin < 2
                         % No startSample given
                         startSample = testronGetNewSample([this.lb this.ub]);
@@ -597,28 +597,28 @@ classdef BreachProblem < BreachStatus
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
                     
-%                     if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
-%                         
-%                         switching_semantics = 'semantic1';
- %                       if strcmp(switching_semantics ,'semantic1')
+                   if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                        
+                        switching_semantics = 'semantic1';
+                        if strcmp(switching_semantics ,'semantic1')
                             for j=1:npoint
-                                f(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                fval1(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
                                 % computation of the function values (if necessary, with additive
                                 % noise)
                             end
-%                         end
-%                         switching_semantics = 'semantic2';
-%                         if strcmp(switching_semantics ,'semantic2')
-%                             
-%                             for j=1:npoint
-%                                 fval2(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
-%                                 % computation of the function values (if necessary, with additive
-%                                 % noise)
-%                             end
-%                         end
-%                         % f = [fval1; fval2];
-%                     end
-%                     
+                        end
+                        switching_semantics = 'semantic2';
+                        if strcmp(switching_semantics ,'semantic2')
+                            
+                            for j=1:npoint
+                                fval2(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
+                        % f = [fval1; fval2];
+                    end
+                    
 %                    x1 = x;
 %                    x2 = x;
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -628,30 +628,30 @@ classdef BreachProblem < BreachStatus
                     while ncall0 < ncall % repeat till ncall function values are reached
                         % (if the stopping criterion is not fulfilled first)
                         if ncall0 == npoint  % initial call
-                            [request,xbest,fbest] = snobfit(file,x,f,params,dx);
-                            %[request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
+                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
+                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
                             
-%                             if fbest2 < fbest1
-%                                 xbest = xbest1;
-%                                 fbest = fbest1;
-%                             else
-%                                 xbest = xbest2;
-%                                 fbest = fbest2;
-%                             end
-%                             
+                            if fbest2 < fbest1
+                                xbest = xbest1;
+                                fbest = fbest1;
+                            else
+                                xbest = xbest2;
+                                fbest = fbest2;
+                            end
+                            
                             %ncall0,xbest,fbest;
                         else                 % continuation call
                             
-                            [request,xbest,fbest] = snobfit(file,x,f,params);
-                            %[request2,xbest2,fbest2] = snobfit(file,x,fval2,params);
+                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params);
+                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params);
                         end
-                        if prt>0, request, end
-                        %if prt>0, request2, end
+                        if prt>0, request1, end
+                        if prt>0, request2, end
                         %clear x1
                         %clear x2
                         clear x
-                        clear f
-                        %clear fval2
+                        clear fval1
+                        clear fval2
                         
                         %%%%% Zahra's Changing:
                         if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
@@ -659,60 +659,62 @@ classdef BreachProblem < BreachStatus
                             switching_semantics = 'semantic1';
                             %switching_semantics
                             if strcmp(switching_semantics, 'semantic1')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval1(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-%                                 for j=1:size(request2,1)
-%                                     x(size(request1,1)+j,:) = request2(j,1:n);
-%                                     fval1(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-%                                     % computation of the (perturbed) function values at the suggested points
-%                                 end
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval1(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
                                 
                                 [fbestn1,jbest1] = min(fval1(:,1)); % best function value
                                 [fsorting1,j1] = sort(fval1(:,1));
-                                x1 = x(j1,:);
+                                %x1 = x(j1,:);
                                 
                             end
                             
                             switching_semantics = 'semantic2';
                             if strcmp(switching_semantics, 'semantic2')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request2,1)
+                                    x(j,:) = request2(j,1:n);
                                     fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
                                 
-%                                 for j=1:size(request2,1)
-%                                     x(size(request1,1)+j,:) = request2(j,1:n);
-%                                     fval2(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-%                                     % computation of the (perturbed) function values at the suggested points
-%                                 end
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval2(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
                                 
                                 [fbestn2,jbest2] = min(fval2(:,1)); % best function value
                                 [fsorting2,j2] = sort(fval2(:,1));
-                                x2 = x(j2,:);
+                                %x2 = x(j2,:);
                             end
                                                     
                             
-                             if  (fbestn1 <= fbest)
+                             if  (fbestn1 <= fbest) && (fbestn2 >= fbest)
                                  switching_semantics = 'semantic1';
                                     %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
                                     f = fval1;
                                     fbestn = fbestn1;
                                     jbest = jbest1;
+                                    % x = x1;
                                     
-                             elseif (fbestn2 <= fbest)
+                             elseif (fbestn2 <= fbest) && (fbestn1 >= fbest)
                                  switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
                                     f = fval2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
+                                    % x = x2;
                              else
                                  
                                 % Do-nothing
@@ -766,11 +768,7 @@ classdef BreachProblem < BreachStatus
 %                             end
                             
                             ranking_done = 0;
-                            
-                            
-                            
-                            
-                            
+                           
                             for i = 1 : length (fsorting1(:,1))
                                 ranking1(i,1) = 0;
                                 for k = i+1: length (fsorting1(:,1))
@@ -819,8 +817,7 @@ classdef BreachProblem < BreachStatus
                                     fbestn = fbestn1;
                                     jbest = jbest1;
                                     ranking_done = 1;
-                                    x1 = x;
-                                    x2 = x;
+                                    % x = x1;
                                     break;
                                 elseif ranking2 (k,1) > ranking1 (k,1)
                                     switching_semantics = 'semantic2';
@@ -830,8 +827,7 @@ classdef BreachProblem < BreachStatus
                                     fbestn = fbestn2;
                                     jbest = jbest2;
                                     ranking_done = 1;
-                                    x1 = x;
-                                    x2 = x;
+                                    % x = x2;
                                     break;
                                 end
                             end
@@ -851,6 +847,7 @@ classdef BreachProblem < BreachStatus
                                     f = fval2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
+                                    % x = x2;
                                     
                                 else
                                     switching_semantics = 'semantic1';
@@ -859,6 +856,7 @@ classdef BreachProblem < BreachStatus
                                     f = fval1;
                                     fbestn = fbestn1;
                                     jbest = jbest1;
+                                    % x = x1;
                                     
                                 end
                                 
@@ -886,7 +884,7 @@ classdef BreachProblem < BreachStatus
                             %                                     f = fval1;
                             %                                    fbestn = fbestn1;
                             %                                    jbest = jbest1;
-                            %                                    x = x1;
+                            %                                    % x = x1;
                             %
                             %                                 elseif variance2 > variance1
                             %                                     switching_semantics = 'semantic2';
@@ -894,7 +892,7 @@ classdef BreachProblem < BreachStatus
                             %                                     f = fval2;
                             %                                     fbestn = fbestn2;
                             %                                     jbest = jbest2;
-                            %                                     x = x2;
+                            %                                     % x = x2;
                             %
                             %                                 elseif variance1 == variance2
                             %                                     if average2 < average1
@@ -903,14 +901,14 @@ classdef BreachProblem < BreachStatus
                             %                                         f = fval1;
                             %                                          fbestn = fbestn1;
                             %                                          jbest = jbest1;
-                            %                                          x = x1;
+                            %                                          % x = x1;
                             %                                     else
                             %                                         switching_semantics = 'semantic2';
                             %                                         ncall0 = ncall0 + size(fval2,1); % update function call counter
                             %                                         f = fval2;
                             %                                          fbestn = fbestn2;
                             %                                          jbest = jbest2;
-                            %                                          x = x2;
+                            %                                          % x = x2;
                             %                                     end
                             %                                 end
                             %                             elseif (variance1 == 0 && variance2 ~= 0)
@@ -919,7 +917,7 @@ classdef BreachProblem < BreachStatus
                             %                                 f = fval2;
                             %                                 fbestn = fbestn2;
                             %                                 jbest = jbest2;
-                            %                                 x = x2;
+                            %                                 % x = x2;
                             %
                             %                             elseif (variance1 ~= 0 && variance2 == 0)
                             %                                 switching_semantics = 'semantic1';
@@ -927,7 +925,7 @@ classdef BreachProblem < BreachStatus
                             %                                 f = fval1;
                             %                                  fbestn = fbestn1;
                             %                                  jbest = jbest1;
-                            %                                  x = x1;
+                            %                                  % x = x1;
                             %                             elseif (variance1 == 0 && variance2 == 0) || (variance1 == variance2)
                             %                                 if average2 < average1
                             %                                     switching_semantics = 'semantic1';
@@ -935,14 +933,14 @@ classdef BreachProblem < BreachStatus
                             %                                     f = fval1;
                             %                                      fbestn = fbestn1;
                             %                                      jbest = jbest1;
-                            %                                      x = x1;
+                            %                                      % x = x1;
                             %                                 else
                             %                                     switching_semantics = 'semantic2';
                             %                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
                             %                                     f = fval2;
                             %                                      fbestn = fbestn2;
                             %                                     jbest = jbest2;
-                            %                                     x = x2;
+                            %                                     % x = x2;
                             %                                 end
                             %                             end
                             %                             %fbests = [fbest1, fbest2];
@@ -1092,7 +1090,6 @@ classdef BreachProblem < BreachStatus
                     res = struct('bestRob',[],'bestSample',[],'nTests',[],'bestCost',[],'paramVal',[],'falsified',[],'time',[]);
                     res.bestSample = xbest;
                     res.bestRob = fbest;
-                    
                 case 'cmaes'
                     % JOHAN CHANGE
                     %                     Px0 = CreateParamSet(this.BrSet.P, this.params,  [this.lb this.ub]);
