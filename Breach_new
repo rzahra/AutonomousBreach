@@ -576,7 +576,8 @@ classdef BreachProblem < BreachStatus
                     n = length(u);  % dimension of the problem
                     % the following are meaningful default values
                     npoint = 1;   % number of random start points to be generated
-if nargin < 2
+                    nreq = (n+6)/2;     % no. of points to be generated in each call to SNOBFIT
+                    if nargin < 2
                         % No startSample given
                         startSample = testronGetNewSample([this.lb this.ub]);
                     end
@@ -699,6 +700,36 @@ if nargin < 2
                                 [fsorting2,j2] = sort(fval2(:,1));
                                 %x2 = x(j2,:);
                             end
+                                                    
+                            
+                              ranking_done = 0;
+                            A1 = zeros(length(x),length(x));
+                            A2 = zeros(length(x),length(x));
+                            
+                            for i=1 : length(x)
+                                for k=1 : length(x)
+                                    if i == k
+                                        A1(i,k) = 0;
+                                        A2(i,k) = 0;
+                                        
+                                    else
+                                        if  fval1(i,1) < fval1(k,1)
+                                            A1(i,k)= A1(i,k) + 1;
+                                        elseif fval1(i,1) == fval1(k,1)
+                                            A1(i,k)= A1(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                        if  fval2(i,1) < fval2(k,1)
+                                            A2(i,k)= A2(i,k) + 1;
+                                        elseif fval2(i,1) == fval2(k,1)
+                                            A2(i,k)= A2(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                    end
+                                end
+                            end
                             
                             
                             %A(i,k) = 0.5;
@@ -775,9 +806,9 @@ if nargin < 2
                             end
                         end
                         
-                                                
                         if fbestn < fbest
                             fbest = fbestn;
+                            %x = [x1, x2];
                             xbest = x(jbest,:);
                             %ncall0,xbest,fbest % display current number of function values,
                             % best point and function value if fbest has
@@ -1108,7 +1139,7 @@ if nargin < 2
         function [fval, cval] = objective_wrapper(this,x)
             % reset this.Spec
             this.Spec.ResetEval();
-            global objToUse;
+            %global objToUse;
             % objective_wrapper calls the objective function and wraps some bookkeeping
             if size(x,1) ~= numel(this.params)
                 x = x';
@@ -1132,26 +1163,29 @@ if nargin < 2
                         % skips logging if already computed
                         % might cause inconsistencies down the road...
                         
-                        %                         if ~isempty(this.X_log)
-                        %                             xi = x(:, iter);
-                        %                             idx = find(sum(abs(this.X_log-repmat(xi, 1, size(this.X_log, 2)))) == 0,1);
-                        %                         else
-                        %                             idx=[];
-                        %                         end
-                        %
-                        %                         if ~isempty(idx)
-                        %                             fval(:,iter) = this.obj_log(:,idx);
-                        %                         else
-                        % calling actual objective function
-                        [fval(:,iter), cval(:,iter)] = fun(iter);
+                        if ~isempty(this.X_log)
+                            xi = x(:, iter);
+                            idx = find(sum(abs(this.X_log-repmat(xi, 1, size(this.X_log, 2)))) == 0,1);
+                        else
+                            idx=[];
+                        end
                         
-                        % logging and updating best
-                        this.time_spent = toc(this.time_start);
-                        this.LogX(x(:, iter), fval(:,iter), cval(:,iter));
-                        % update status
+                        if ~isempty(idx)
+                            %fval(:,iter) = this.obj_log(:,idx);
+                            [fval(:,iter), cval(:,iter)] = fun(iter);
+                            this.time_spent = toc(this.time_start);
+                            %this.LogX(x(:, iter), fval(:,iter), cval(:,iter));
+                        else
+                            % calling actual objective function
+                            [fval(:,iter), cval(:,iter)] = fun(iter);
+                            
+                            % logging and updating best
+                            this.time_spent = toc(this.time_start);
+                            this.LogX(x(:, iter), fval(:,iter), cval(:,iter));
+                            % update status
+                        end
+                        
                     end
-                    
-                    %                     end
                 else % Parallel case
                     
                     % Launch tasks
@@ -1180,6 +1214,7 @@ if nargin < 2
             end
             
         end
+        
         
         function b = stopping(this)
             b = (this.time_spent >= this.max_time) ||...
