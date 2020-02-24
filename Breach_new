@@ -576,8 +576,7 @@ classdef BreachProblem < BreachStatus
                     n = length(u);  % dimension of the problem
                     % the following are meaningful default values
                     npoint = 1;   % number of random start points to be generated
-                    nreq = n+6;     % no. of points to be generated in each call to SNOBFIT
-                    if nargin < 2
+if nargin < 2
                         % No startSample given
                         startSample = testronGetNewSample([this.lb this.ub]);
                     end
@@ -586,6 +585,7 @@ classdef BreachProblem < BreachStatus
                     dx = (v-u)'*1.e-5; % resolution vector
                     p = 0.5;        % probability of generating a point of class 4
                     prt = 0;        % print level
+                    counting = 1;
                     % prt = 0 prints ncall, xbest and fbest if xbest has
                     %         changed
                     % prt = 1 in addition prints the points suggested by
@@ -594,42 +594,85 @@ classdef BreachProblem < BreachStatus
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     % end of data to be adapted
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    for j=1:npoint
-                        f(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
-                        % computation of the function values (if necessary, with additive
-                        % noise)
+                    
+                    
+                   if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                        
+                        switching_semantics = 'semantic1';
+                        if strcmp(switching_semantics ,'semantic1')
+                            for j=1:npoint
+                                fval1(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
+                        switching_semantics = 'semantic2';
+                        if strcmp(switching_semantics ,'semantic2')
+                            
+                            for j=1:npoint
+                                fval2(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
+                        % f = [fval1; fval2];
                     end
+                    
+%                    x1 = x;
+%                    x2 = x;
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     ncall0 = npoint;   % function call counter
                     params = struct('bounds',{u,v},'nreq',nreq,'p',p); % input structure
                     % repeated calls to Snobfit
                     while ncall0 < ncall % repeat till ncall function values are reached
                         % (if the stopping criterion is not fulfilled first)
                         if ncall0 == npoint  % initial call
-                            [request,xbest,fbest] = snobfit(file,x,f,params,dx);
+                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
+                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
+                            
+%                             fnew1 = fbest1;
+%                             fnew2 = fbest2;
+                            if fbest1 < fbest2
+                                xbest = xbest1;
+                                fbest = fbest1;
+                                switching = 1;
+                            else
+                                xbest = xbest2;
+                                fbest = fbest2;
+                                switching = 2;
+                            end
+                            
                             %ncall0,xbest,fbest;
                         else                 % continuation call
-                            [request,xbest,fbest] = snobfit(file,x,f,params);
+                            
+                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params);
+                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params);
                         end
-                        if prt>0, request, end
+                        if prt>0, request1, end
+                        if prt>0, request2, end
+                        %clear x1
+                        %clear x2
                         clear x
-                        clear f
+                        clear fval1
+                        clear fval2
+                        
                         %%%%% Zahra's Changing:
                         if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
                             
                             switching_semantics = 'semantic1';
                             %switching_semantics
                             if strcmp(switching_semantics, 'semantic1')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval1(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                %                                 for j=1:size(request2,1)
-                                %                                     x(size(request1,1)+j,:) = request2(j,1:n);
-                                %                                     fval1(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                %                                     % computation of the (perturbed) function values at the suggested points
-                                %                                 end
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval1(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
                                 
                                 [fbestn1,jbest1] = min(fval1(:,1)); % best function value
                                 [fsorting1,j1] = sort(fval1(:,1));
@@ -639,51 +682,22 @@ classdef BreachProblem < BreachStatus
                             
                             switching_semantics = 'semantic2';
                             if strcmp(switching_semantics, 'semantic2')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request2,1)
+                                    x(j,:) = request2(j,1:n);
                                     fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
                                 
-                                %                                 for j=1:size(request2,1)
-                                %                                     x(size(request1,1)+j,:) = request2(j,1:n);
-                                %                                     fval2(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                %                                     % computation of the (perturbed) function values at the suggested points
-                                %                                 end
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval2(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
                                 
                                 [fbestn2,jbest2] = min(fval2(:,1)); % best function value
                                 [fsorting2,j2] = sort(fval2(:,1));
                                 %x2 = x(j2,:);
-                            end
-                            
-                            ranking_done = 0;
-                            A1 = zeros(length(x),length(x));
-                            A2 = zeros(length(x),length(x));
-                            
-                            for i=1 : length(x)
-                                for k=1 : length(x)
-                                    if i == k
-                                        A1(i,k) = 0;
-                                        A2(i,k) = 0;
-                                        
-                                    else
-                                        if  fval1(i,1) < fval1(k,1)
-                                            A1(i,k)= A1(i,k) + 1;
-                                        elseif fval1(i,1) == fval1(k,1)
-                                            A1(i,k)= A1(i,k) +0.5;
-                                        else
-                                            % Do nothing
-                                        end
-                                        if  fval2(i,1) < fval2(k,1)
-                                            A2(i,k)= A2(i,k) + 1;
-                                        elseif fval2(i,1) == fval2(k,1)
-                                            A2(i,k)= A2(i,k) +0.5;
-                                        else
-                                            % Do nothing
-                                        end
-                                    end
-                                end
                             end
                             
                             
