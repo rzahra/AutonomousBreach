@@ -681,8 +681,8 @@ classdef BreachProblem < BreachStatus
                                 x1 = x(j1,:);
                                 fnew1 = fsorting1(1:(nreq/2),:);
                                 x1 = x1(1:(nreq/2),:);
-                                [fbestn1,jbest1] = min(fnew1(:,1)); % best function value
-                                fnew1(:,2) = fval1(1:(nreq/2),2);
+                                 [fbestn1,jbest1] = min(fnew1(:,1)); % best function value
+                                 fnew1(:,2) = fval1(1:(nreq/2),2);
                                 
                             end
                             
@@ -702,12 +702,12 @@ classdef BreachProblem < BreachStatus
                                 end
                                 
                                 
-                                [fsorting2,j2] = sort(fval2(:,1));
-                                x2 = x(j2,:);
-                                fnew2 = fsorting2(1:(nreq/2),:);
-                                x2 = x2(1:(nreq/2),:);
-                                [fbestn2,jbest2] = min(fnew2(:,1)); % best function value
-                                fnew2(:,2) = fval2(1:(nreq/2),2);
+                                  [fsorting2,j2] = sort(fval2(:,1));
+                                 x2 = x(j2,:);
+                                 fnew2 = fsorting2(1:(nreq/2),:);
+                                 x2 = x2(1:(nreq/2),:);
+                                 [fbestn2,jbest2] = min(fnew2(:,1)); % best function value
+                                 fnew2(:,2) = fval2(1:(nreq/2),2);
                                 
                             end
                                                     
@@ -765,9 +765,9 @@ classdef BreachProblem < BreachStatus
                                 if (maxIndex(1,i) == j1(i,1)) && (maxIndex(1,i) ~= j2(i,1))
                                     
                                     switching_semantics = 'semantic1';
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                    fval1 = fnew1;
-                                    fval2 = fnew2;
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                     fval1 = fnew1;
+                                     fval2 = fnew2;
                                     fbestn = fbestn1;
                                     jbest = jbest1;
                                     ranking_done = 1;
@@ -776,9 +776,9 @@ classdef BreachProblem < BreachStatus
                                 elseif (maxIndex(1,i) ~= j1(i,1)) && (maxIndex(1,i) == j2(i,1))
                                     switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                    fval1 = fnew1;
-                                    fval2 = fnew2;
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                     fval1 = fnew1;
+                                     fval2 = fnew2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
                                     ranking_done = 1;
@@ -811,17 +811,17 @@ classdef BreachProblem < BreachStatus
                                 if variance2 > variance1
                                     switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
                                     fval1 = fnew1;
                                     fval2 = fnew2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
-                                    x = x2;
+                                   x = x2;
                                     
                                 elseif variance1 > variance2  
                                     switching_semantics = 'semantic1';
                                     %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
                                     fval1 = fnew1;
                                     fval2 = fnew2;
                                     fbestn = fbestn1;
@@ -831,7 +831,7 @@ classdef BreachProblem < BreachStatus
                                 elseif average2 < average1
                                     switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
                                     fval1 = fnew1;
                                     fval2 = fnew2;
                                     fbestn = fbestn2;
@@ -841,7 +841,7 @@ classdef BreachProblem < BreachStatus
                                 else
                                     switching_semantics = 'semantic1';
                                     %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
                                     fval1 = fnew1;
                                     fval2 = fnew2;
                                     fbestn = fbestn1;
