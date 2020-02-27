@@ -1,0 +1,13 @@
+[fsorting2,j2] = sort(fval2(:,1));
+                                x2 = x(j2,:);
+                                fnew2 = fsorting2(1:nreq,:);
+                                x2 = x2(1:nreq,:);
+                                [fbestn2,jbest2] = min(fnew2(:,1)); % best function value
+                                fnew2(:,2) = fval2(1:nreq,2);
+                                
+                                [fsorting1,j1] = sort(fval1(:,1));
+                                x1 = x(j1,:);
+                                fnew1 = fsorting1(1:nreq,:);
+                                x1 = x1(1:nreq,:);
+                                [fbestn1,jbest1] = min(fnew1(:,1)); % best function value
+                                fnew1(:,2) = fval1(1:nreq,2);
