@@ -576,7 +576,7 @@ classdef BreachProblem < BreachStatus
                     n = length(u);  % dimension of the problem
                     % the following are meaningful default values
                     npoint = 1;   % number of random start points to be generated
-                    nreq = (n+6)/2;     % no. of points to be generated in each call to SNOBFIT
+                    nreq = (n+6);     % no. of points to be generated in each call to SNOBFIT
                     if nargin < 2
                         % No startSample given
                         startSample = testronGetNewSample([this.lb this.ub]);
@@ -597,7 +597,7 @@ classdef BreachProblem < BreachStatus
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
                     
-                   if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                    if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
                         
                         switching_semantics = 'semantic1';
                         if strcmp(switching_semantics ,'semantic1')
@@ -617,10 +617,39 @@ classdef BreachProblem < BreachStatus
                             end
                         end
                         % f = [fval1; fval2];
+                        
+                    elseif strcmp(objToUse, 'multi_all')
+                        switching_semantics = 'semantic1';
+                        if strcmp(switching_semantics ,'semantic1')
+                            for j=1:npoint
+                                fval1(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
+                        switching_semantics = 'semantic2';
+                        if strcmp(switching_semantics ,'semantic2')
+                            
+                            for j=1:npoint
+                                fval2(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
+                        
+                        switching_semantics = 'semantic3';
+                        if strcmp(switching_semantics ,'semantic3')
+                            
+                            for j=1:npoint
+                                fval3(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
+                                % computation of the function values (if necessary, with additive
+                                % noise)
+                            end
+                        end
                     end
                     
-%                    x1 = x;
-%                    x2 = x;
+                    %                    x1 = x;
+                    %                    x2 = x;
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     ncall0 = npoint;   % function call counter
                     params = struct('bounds',{u,v},'nreq',nreq,'p',p); % input structure
@@ -628,30 +657,63 @@ classdef BreachProblem < BreachStatus
                     while ncall0 < ncall % repeat till ncall function values are reached
                         % (if the stopping criterion is not fulfilled first)
                         if ncall0 == npoint  % initial call
-                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
-                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
-                            
+                            if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                                
+                                [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
+                                [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
+                                
+                            elseif strcmp(objToUse, 'multi_all')
+                                
+                                [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
+                                [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
+                                [request3,xbest3,fbest3] = snobfit(file,x,fval3,params,dx);
+                                
+                            end
+                            %                             fnew1 = fbest1;
+                            %                             fnew2 = fbest2;
                             if fbest2 < fbest1
                                 xbest = xbest1;
                                 fbest = fbest1;
+                                switching = 1;
                             else
                                 xbest = xbest2;
                                 fbest = fbest2;
+                                switching = 2;
                             end
                             
                             %ncall0,xbest,fbest;
                         else                 % continuation call
                             
-                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params);
-                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params);
+                            
+                            if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                                
+                                [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
+                                [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
+                                
+                            elseif strcmp(objToUse, 'multi_all')
+                                
+                                [request1,xbest1,fbest1] = snobfit(file,x1,fval1,params);
+                                [request2,xbest2,fbest2] = snobfit(file,x2,fval2,params);
+                                [request3,xbest3,fbest3] = snobfit(file,x3,fval3,params);
+                                
+                            end
+                            
+                            
+                            
+                            
+                            
                         end
                         if prt>0, request1, end
                         if prt>0, request2, end
+                        if prt>0, request3, end
                         %clear x1
                         %clear x2
-                        clear x
+                        clear x1
+                        clear x2
+                        clear x3
                         clear fval1
                         clear fval2
+                        clear fval3
                         
                         %%%%% Zahra's Changing:
                         if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
@@ -671,16 +733,20 @@ classdef BreachProblem < BreachStatus
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                [fbestn1,jbest1] = min(fval1(:,1)); % best function value
+                                
                                 [fsorting1,j1] = sort(fval1(:,1));
-                                %x1 = x(j1,:);
+                                x1 = x(j1,:);
+                                fnew1 = fsorting1(1:(nreq/3),:);
+                                x1 = x1(1:(nreq/3),:);
+                                [fbestn1,jbest1] = min(fnew1(:,1)); % best function value
+                                fnew1(:,2) = fval1(1:(nreq/3),2);
                                 
                             end
                             
                             switching_semantics = 'semantic2';
                             if strcmp(switching_semantics, 'semantic2')
-                                for j=1:size(request2,1)
-                                    x(j,:) = request2(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
@@ -692,379 +758,450 @@ classdef BreachProblem < BreachStatus
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                [fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                [fsorting2,j2] = sort(fval2(:,1));
-                                %x2 = x(j2,:);
-                            end
-                                                    
-                            
-                             if  (fbestn1 <= fbest) && (fbestn2 >= fbest)
-                                 switching_semantics = 'semantic1';
-                                    %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                    f = fval1;
-                                    fbestn = fbestn1;
-                                    jbest = jbest1;
-                                    % x = x1;
-                                    
-                             elseif (fbestn2 <= fbest) && (fbestn1 >= fbest)
-                                 switching_semantics = 'semantic2';
-                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                    f = fval2;
-                                    fbestn = fbestn2;
-                                    jbest = jbest2;
-                                    % x = x2;
-                             else
-                                 
-                                % Do-nothing
                                 
-                           
-%                            for i = 1 : length (fval2(:,1))
-%                                 ranking(i,1) = ranking1(i,1) + ranking2(i,1);
-%                            end 
+                                [fsorting2,j2] = sort(fval2(:,1));
+                                x2 = x(j2,:);
+                                fnew2 = fsorting2(1:(nreq/3),:);
+                                x2 = x2(1:(nreq/3),:);
+                                [fbestn2,jbest2] = min(fnew2(:,1)); % best function value
+                                fnew2(:,2) = fval2(1:(nreq/3),2);
+                                
+                            end
                             
-                           %[rankingSort, jj] = sort (ranking(:,1));  
-%                            
-%                            for k = length (rankingSort(:,1)):1
-%                                
-%                                finding = find(x == jj(:,k))
-%                                finding1 = find(j1 == jj(:,k))
-%                                finding2 = find(j2 == jj(:,k))
-% 
-%                             if j1<= j2
-%                                 
-%                                     switching_semantics = 'semantic1';
-%                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
-%                                     %f = fval1;
-%                                     fbestn = fbestn1;
-%                                     jbest = jbest1;
-%                                     ranking_done = 1;
-%                                     x1 = x;
-%                                     x2 = x;
-%                                     break;
-%                             else
-%                                 
-%                            switching_semantics = 'semantic2';
-%                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-%                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
-%                                     %f = fval2;
-%                                     fbestn = fbestn2;
-%                                     jbest = jbest2;
-%                                     ranking_done = 1;
-%                                     x1 = x;
-%                                     x2 = x;
-%                                     break;
-%                             end
-%                            end
-%                                 ranking1 (i,1) = length(fsorting1(:,1))-1;
-%                                 finding1 (i,1) = find (j2==j1(i,:));
-%                                 ranking1 (i,1) = ranking1(i,1) + length(fval2(:,1))-finding1 (i,1);
-%                             end
-%                             for i=1 : length (fval2(:,1))
-%                                 ranking2 (i,1) = length(fval2(:,1))-1;
-%                                 finding2 (i,1) = find (j1==j2(i,:));
-%                                 ranking2 (i,1) = ranking2 (i,1) + length(fval1(:,1))-finding2 (i,1);
-%                             end
                             
                             ranking_done = 0;
-                           
-                            for i = 1 : length (fsorting1(:,1))
-                                ranking1(i,1) = 0;
-                                for k = i+1: length (fsorting1(:,1))
-                                    if i == length (fsorting1(:,1))
-                                        ranking1(i,1) = 0;
-                                    else
-                                        if fsorting1(i,1) < fsorting1(k,1)
-                                            ranking1(i,1) = ranking1(i,1) + 1;
-                                        elseif fsorting1(i,1) == fsorting1(k,1)
-                                            ranking1(i,1) = ranking1(i,1) + 0.5;
-                                        else
-                                            % do nothing
-                                        end
+                            A1 = zeros(length(x),length(x));
+                            A2 = zeros(length(x),length(x));
+                            
+                            for i=1 : length(x)
+                                for k=1 : length(x)
+                                    if i == k
+                                        A1(i,k) = 0;
+                                        A2(i,k) = 0;
                                         
+                                    else
+                                        if  fval1(i,1) < fval1(k,1)
+                                            A1(i,k)= A1(i,k) + 1;
+                                        elseif fval1(i,1) == fval1(k,1)
+                                            A1(i,k)= A1(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                        if  fval2(i,1) < fval2(k,1)
+                                            A2(i,k)= A2(i,k) + 1;
+                                        elseif fval2(i,1) == fval2(k,1)
+                                            A2(i,k)= A2(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
                                     end
                                 end
                             end
                             
                             
-                            for i = 1 : length (fsorting2(:,1))
-                                ranking2(i,1) = 0;
-                                for k = i+1: length (fsorting2(:,1))
-                                    if i == length (fsorting2(:,1))
-                                        ranking2(i,1) = 0;
-                                    else
-                                        if fsorting2(i,1) < fsorting2(k,1)
-                                            ranking2(i,1) = ranking2(i,1) + 1;
-                                        elseif fval2(i,1) == fval2(k,1)
-                                            ranking2(i,1) = ranking2(i,1) + 0.5;
-                                        else
-                                            % do nothing
-                                        end
-                                        
+                            %A(i,k) = 0.5;
+                            
+                            
+                            A = A1+A2;
+                            for i=1 : length(x)
+                                for k=1 : length(x)
+                                    if i == k
+                                        A(i,k) = 0.5;
                                     end
                                 end
-                            end 
+                            end
                             
+                            A = (A)^5;
+                            for i=1 : length(x)
+                                R(1,i) = sum (A(i,:));
+                            end
                             
+                            [maxValue,maxIndex] = sort (R(1,:), 'descend');
                             
-                            
-                            for k = 1: length (ranking1(:,1))
-                                if ranking1 (k,1) > ranking2 (k,1)
+                            for i=1 : length(R(1,:))
+                                if (maxIndex(1,i) == j1(i,1)) && (maxIndex(1,i) ~= j2(i,1))
+                                    
                                     switching_semantics = 'semantic1';
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                    f = fval1;
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
                                     fbestn = fbestn1;
                                     jbest = jbest1;
                                     ranking_done = 1;
-                                    % x = x1;
+                                    x = x1;
                                     break;
-                                elseif ranking2 (k,1) > ranking1 (k,1)
+                                elseif (maxIndex(1,i) ~= j1(i,1)) && (maxIndex(1,i) == j2(i,1))
                                     switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                    f = fval2;
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
                                     ranking_done = 1;
-                                    % x = x2;
+                                    x = x2;
                                     break;
                                 end
                             end
-                             
+                            
                             if  (ranking_done == 1)
                                 % Do-nothing
                                 
                             elseif (ranking_done == 0)
+                                
                                 average1 = mean (fval1(:,1));
                                 average2 = mean (fval2(:,1));
                                 var1 = 0;
                                 var2 = 0;
-                                if average1 < average2
+                                
+                                for i = 1: size(fval1,1)
+                                    var1 = var1 + (fval1(i,1) - average1)^2;
+                                end
+                                
+                                for i = 1: size(fval2,1)
+                                    var2 = var2 + (fval2(i,1) - average2)^2;
+                                end
+                                
+                                
+                                variance1 = var1 / length (fval1);
+                                variance2 = var2 / length (fval2);
+                                if variance2 > variance1
                                     switching_semantics = 'semantic2';
                                     %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                    f = fval2;
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
                                     fbestn = fbestn2;
                                     jbest = jbest2;
-                                    % x = x2;
+                                    x = x2;
+                                    
+                                elseif variance1 > variance2
+                                    switching_semantics = 'semantic1';
+                                    %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn1;
+                                    jbest = jbest1;
+                                    x = x1;
+                                    
+                                elseif average2 < average1
+                                    switching_semantics = 'semantic2';
+                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn2;
+                                    jbest = jbest2;
+                                    x = x2;
                                     
                                 else
                                     switching_semantics = 'semantic1';
                                     %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                    ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                    f = fval1;
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
                                     fbestn = fbestn1;
                                     jbest = jbest1;
-                                    % x = x1;
+                                    x = x1;
                                     
                                 end
                                 
                             end
-                             end
-                            %
                             
-                            %
-                            %                             for i = 1: size(fval1,1)
-                            %                                 var1 = var1 + (fval1(i,1) - average1)^2;
-                            %                             end
-                            %
-                            %                             for i = 1: size(fval2,1)
-                            %                                 var2 = var2 + (fval2(i,1) - average2)^2;
-                            %                             end
-                            %
-                            %
-                            %                             variance1 = var1 / length (fval1);
-                            %                             variance2 = var2 / length (fval2);
-                            %
-                            %                             if (variance1 ~= 0 && variance2 ~= 0)
-                            %                                 if variance1 > variance2
-                            %                                     switching_semantics = 'semantic1';
-                            %                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
-                            %                                     f = fval1;
-                            %                                    fbestn = fbestn1;
-                            %                                    jbest = jbest1;
-                            %                                    % x = x1;
-                            %
-                            %                                 elseif variance2 > variance1
-                            %                                     switching_semantics = 'semantic2';
-                            %                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
-                            %                                     f = fval2;
-                            %                                     fbestn = fbestn2;
-                            %                                     jbest = jbest2;
-                            %                                     % x = x2;
-                            %
-                            %                                 elseif variance1 == variance2
-                            %                                     if average2 < average1
-                            %                                         switching_semantics = 'semantic1';
-                            %                                         ncall0 = ncall0 + size(fval1,1); % update function call counter
-                            %                                         f = fval1;
-                            %                                          fbestn = fbestn1;
-                            %                                          jbest = jbest1;
-                            %                                          % x = x1;
-                            %                                     else
-                            %                                         switching_semantics = 'semantic2';
-                            %                                         ncall0 = ncall0 + size(fval2,1); % update function call counter
-                            %                                         f = fval2;
-                            %                                          fbestn = fbestn2;
-                            %                                          jbest = jbest2;
-                            %                                          % x = x2;
-                            %                                     end
-                            %                                 end
-                            %                             elseif (variance1 == 0 && variance2 ~= 0)
-                            %                                 switching_semantics = 'semantic2';
-                            %                                 ncall0 = ncall0 + size(fval2,1); % update function call counter
-                            %                                 f = fval2;
-                            %                                 fbestn = fbestn2;
-                            %                                 jbest = jbest2;
-                            %                                 % x = x2;
-                            %
-                            %                             elseif (variance1 ~= 0 && variance2 == 0)
-                            %                                 switching_semantics = 'semantic1';
-                            %                                 ncall0 = ncall0 + size(fval1,1); % update function call counter
-                            %                                 f = fval1;
-                            %                                  fbestn = fbestn1;
-                            %                                  jbest = jbest1;
-                            %                                  % x = x1;
-                            %                             elseif (variance1 == 0 && variance2 == 0) || (variance1 == variance2)
-                            %                                 if average2 < average1
-                            %                                     switching_semantics = 'semantic1';
-                            %                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
-                            %                                     f = fval1;
-                            %                                      fbestn = fbestn1;
-                            %                                      jbest = jbest1;
-                            %                                      % x = x1;
-                            %                                 else
-                            %                                     switching_semantics = 'semantic2';
-                            %                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
-                            %                                     f = fval2;
-                            %                                      fbestn = fbestn2;
-                            %                                     jbest = jbest2;
-                            %                                     % x = x2;
-                            %                                 end
-                            %                             end
-                            %                             %fbests = [fbest1, fbest2];
-                            %                             if fbestn1 > fbestn2
-                            %                                 fbestn = fbestn1;
-                            %                                 jbest = jbest1;
-                            %                             else
-                            %                                 fbestn = fbestn2;
-                            %                                 jbest = jbest2;
-                            %                             end
+                            
                             
                             
                         elseif strcmp(objToUse, 'multi_all')
                             
                             switching_semantics = 'semantic1';
+                            %switching_semantics
                             if strcmp(switching_semantics, 'semantic1')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval1(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                [fbestn1,jbest1] = min(fval1(:,1)); % best function value
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval1(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                for j=1:size(request3,1)
+                                    x(end+j,:) = request3(j,1:n);
+                                    fval1(end+j,:) = [feval(fcn,x(end+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                [fsorting1,j1] = sort(fval1(:,1));
+                                x1 = x(j1,:);
+                                fnew1 = fsorting1(1:(nreq/3),:);
+                                x1 = x1(1:(nreq/3),:);
+                                [fbestn1,jbest1] = min(fnew1(:,1)); % best function value
+                                fnew1(:,2) = fval1(1:(nreq/3),2);
                                 
                             end
                             
                             switching_semantics = 'semantic2';
                             if strcmp(switching_semantics, 'semantic2')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                [fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval2(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                
+                                for j=1:size(request3,1)
+                                    x(end+j,:) = request3(j,1:n);
+                                    fval2(end+j,:) = [feval(fcn,x(end+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                [fsorting2,j2] = sort(fval2(:,1));
+                                x2 = x(j2,:);
+                                fnew2 = fsorting2(1:(nreq/3),:);
+                                x2 = x2(1:(nreq/3),:);
+                                [fbestn2,jbest2] = min(fnew2(:,1)); % best function value
+                                fnew2(:,2) = fval2(1:(nreq/3),2);
                                 
                             end
                             
                             switching_semantics = 'semantic3';
                             if strcmp(switching_semantics, 'semantic3')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
+                                for j=1:size(request1,1)
+                                    x(j,:) = request1(j,1:n);
                                     fval3(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
                                     % computation of the (perturbed) function values at the suggested points
                                 end
                                 
-                                [fbestn3,jbest3] = min(fval3(:,1)); % best function value
+                                
+                                for j=1:size(request2,1)
+                                    x(size(request1,1)+j,:) = request2(j,1:n);
+                                    fval3(size(request1,1)+j,:) = [feval(fcn,x(size(request1,1)+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                
+                                for j=1:size(request3,1)
+                                    x(end+j,:) = request3(j,1:n);
+                                    fval3(end+j,:) = [feval(fcn,x(end+j,:), this)+fac*randn max(sqrt(eps),3*fac)];
+                                    % computation of the (perturbed) function values at the suggested points
+                                end
+                                
+                                
+                                [fsorting3,j3] = sort(fval3(:,1));
+                                x3 = x(j3,:);
+                                fnew3 = fsorting3(1:(nreq/3),:);
+                                x3 = x3(1:(nreq/3),:);
+                                [fbestn3,jbest3] = min(fnew3(:,1)); % best function value
+                                fnew3(:,2) = fval3(1:(nreq/3),2);
                                 
                             end
                             
-                            average1 = mean (fval1(:,1));
-                            average2 = mean (fval2(:,1));
-                            average3 = mean (fval3(:,1));
                             
-                            var1 = 0;
-                            var2 = 0;
-                            var3 = 0;
-                            
-                            for i = 1: size(fval1,1)
-                                var1 = var1 + (fval1(i,1) - average1)^2;
+                            ranking_done = 0;
+                            A1 = zeros(length(v1),length(v1));
+                            A2 = zeros(length(v2),length(v2));
+                            A3 = zeros(length(v3),length(v3));
+                            for i=1 : length(v1)
+                                for k=1 : length(v1)
+                                    if i == k
+                                        A1(i,k) = 0;
+                                        A2(i,k) = 0;
+                                        A3(i,k) = 0;
+                                        
+                                    else
+                                        if  fval1(1,i) < fval1(1,k)
+                                            A1(i,k)= A1(i,k) + 1;
+                                        elseif fval1(1,i) == fval1(1,k)
+                                            A1(i,k)= A1(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                        if  fval2(1,i) < fval2(1,k)
+                                            A2(i,k)= A2(i,k) + 1;
+                                        elseif fval2(1,i) == fval2(1,k)
+                                            A2(i,k)= A2(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                        if  fval3(1,i) < fval3(1,k)
+                                            A3(i,k)= A3(i,k) + 1;
+                                        elseif fval3(1,i) == fval3(1,k)
+                                            A3(i,k)= A3(i,k) +0.5;
+                                        else
+                                            % Do nothing
+                                        end
+                                    end
+                                end
                             end
                             
-                            for i = 1: size(fval2,1)
-                                var2 = var2 + (fval2(i,1) - average2)^2;
+                            
+                            %A(i,k) = 0.5;
+                            
+                            
+                            A = A1+A2+A3;
+                            for i=1 : length(x)
+                                for k=1 : length(x)
+                                    if i == k
+                                        A(i,k) = 0.5;
+                                    end
+                                end
                             end
                             
-                            for i = 1: size(fval3,1)
-                                var3 = var3 + (fval3(i,1) - average3)^2;
+                            A = (A)^5;
+                            for i=1 : length(x)
+                                R(1,i) = sum (A(i,:));
                             end
                             
-                            variance1 = var1 / length (fval1);
-                            variance2 = var2 / length (fval2);
-                            variance3 = var3 / length (fval3);
+                            [maxValue,maxIndex] = sort (R(1,:), 'descend');
                             
-                            variance = [variance1, variance2, variance3];
-                            maxVariance = max(variance(1,:));
-                            
-                            if (maxVariance == variance1)
-                                switching_semantics = 'semantic1';
-                                %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                f = fval1;
-                                %fbestn = fbestn1;
-                                %jbest = jbest1;
-                                ncall0 = ncall0 + size(fval1,1); % update function call counter
+                            for i=1 : length(R(1,:))
+                                if (maxIndex(1,i) == j1(i,1)) && (maxIndex(1,i) ~= j2(i,1) && (maxIndex(1,i) ~= j3(i,1)))
+                                    
+                                    switching_semantics = 'semantic1';
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn1;
+                                    jbest = jbest1;
+                                    ranking_done = 1;
+                                    x = x1;
+                                    break;
+                                elseif (maxIndex(1,i) ~= j1(i,1)) && (maxIndex(1,i) == j2(i,1) && (maxIndex(1,i) ~= j3(i,1)))
+                                    switching_semantics = 'semantic2';
+                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn2;
+                                    jbest = jbest2;
+                                    ranking_done = 1;
+                                    x = x2;
+                                    break;
                                 
-                            elseif (maxVariance == variance2)
-                                switching_semantics = 'semantic2';
-                                %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                f = fval2;
-                                %fbestn = fbestn2;
-                                %jbest = jbest2;
-                                ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                
-                            else
-                                switching_semantics = 'semantic3';
-                                %[fbestn3,jbest3] = min(fval3(:,1)); % best function value
-                                f = fval3;
-                                %fbestn = fbestn3;
-                                %jbest = jbest3;
-                                ncall0 = ncall0 + size(fval3,1); % update function call counter
+                                elseif (maxIndex(1,i) ~= j1(i,1)) && (maxIndex(1,i) ~= j2(i,1) && (maxIndex(1,i) == j3(i,1)))
+                                    switching_semantics = 'semantic3';
+                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval3,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fval3 = fnew3;
+                                    fbestn = fbestn3;
+                                    jbest = jbest3;
+                                    ranking_done = 1;
+                                    x = x3;
+                                    break;
+                                end
                             end
                             
-                            min_fbest = [fbestn1, fbestn2, fbestn3];
-                            min_obj = min(min_fbest(1,:));
-                            
-                            if (min_obj == fbestn1)
-                                fbestn = fbestn1;
-                                jbest = jbest1;
-                                %ncall0 = ncall0 + size(fval1,1); % update function call counter
+                            if  (ranking_done == 1)
+                                % Do-nothing
                                 
-                            elseif (min_obj == fbestn2)
-                                fbestn = fbestn2;
-                                jbest = jbest2;
-                                %ncall0 = ncall0 + size(fval2,1); % update function call counter
+                            elseif (ranking_done == 0)
                                 
-                            else
-                                fbestn = fbestn3;
-                                jbest = jbest3;
-                                %ncall0 = ncall0 + size(fval3,1); % update function call counter
+                                average1 = mean (fval1(:,1));
+                                average2 = mean (fval2(:,1));
+                                average3 = mean (fval3(:,1));
+                                var1 = 0;
+                                var2 = 0;
+                                var3 = 0;
+                                
+                                for i = 1: size(fval1,1)
+                                    var1 = var1 + (fval1(i,1) - average1)^2;
+                                end
+                                
+                                for i = 1: size(fval2,1)
+                                    var2 = var2 + (fval2(i,1) - average2)^2;
+                                end
+                                
+                                for i = 1: size(fval3,1)
+                                    var3 = var3 + (fval3(i,1) - average3)^2;
+                                end
+                                
+                                variance1 = var1 / length (fval1);
+                                variance2 = var2 / length (fval2);
+                                variance3 = var3 / length (fval3);
+                                
+                                average = [average1, average2, average3];
+                                minaverage = min(variance(1,:));
+                                
+                                variance = [variance1, variance2, variance3];
+                                maxVariance = max(variance(1,:));
+                                
+                                if (maxVariance == variance1)
+                                    switching_semantics = 'semantic2';
+                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn2;
+                                    jbest = jbest2;
+                                    x = x2;
+                                    
+                                elseif (maxVariance == variance2)
+                                    switching_semantics = 'semantic1';
+                                    %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn1;
+                                    jbest = jbest1;
+                                    x = x1;
+                                    
+                                elseif (maxVariance == variance3)
+                                    switching_semantics = 'semantic3';
+                                    %[fbestn3,jbest3] = min(fval3(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval3,1)/2); % update function call counter
+                                    fval1 = fnew3;
+                                    fval2 = fnew3;
+                                    fbestn = fbestn3;
+                                    jbest = jbest3;
+                                    x = x3;
+                                    
+                                elseif (minaverage == average1)
+                                    switching_semantics = 'semantic2';
+                                    %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval2,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn2;
+                                    jbest = jbest2;
+                                    x = x2;
+                                    
+                                elseif (minaverage == average2)
+                                    switching_semantics = 'semantic1';
+                                    %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval1,1)/2); % update function call counter
+                                    fval1 = fnew1;
+                                    fval2 = fnew2;
+                                    fbestn = fbestn1;
+                                    jbest = jbest1;
+                                    x = x1;
+                                    
+                                elseif (minaverage == average3)
+                                    switching_semantics = 'semantic3';
+                                    %[fbestn3,jbest3] = min(fval3(:,1)); % best function value
+                                    ncall0 = ncall0 + (size(fval3,1)/2); % update function call counter
+                                    fval1 = fnew3;
+                                    fval2 = fnew3;
+                                    fbestn = fbestn3;
+                                    jbest = jbest3;
+                                    x = x3;
+                                    
+                                end
+                                
                             end
-                            
-                            
                         end
-                        
                         
                         
                         
@@ -1079,6 +1216,10 @@ classdef BreachProblem < BreachStatus
                         % check stopping criterion
                         % if fglob == 0, stop if fbest < 1.e-5
                         % otherwise, stop if (fbest-fglob)/abs(fglob) < 1.e-2
+                        
+                        %                         if fbest < 0
+                        %                             break;
+                        %                         end
                         if fglob
                             if abs((fbest-fglob)/fglob) < 1.e-2,break,end
                         else
@@ -1090,6 +1231,7 @@ classdef BreachProblem < BreachStatus
                     res = struct('bestRob',[],'bestSample',[],'nTests',[],'bestCost',[],'paramVal',[],'falsified',[],'time',[]);
                     res.bestSample = xbest;
                     res.bestRob = fbest;
+                    
                 case 'cmaes'
                     % JOHAN CHANGE
                     %                     Px0 = CreateParamSet(this.BrSet.P, this.params,  [this.lb this.ub]);
