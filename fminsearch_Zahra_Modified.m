@@ -271,117 +271,161 @@ for j = 1:n
     %    fv(1,j+1) = f;
 end
 
+switching = 1;
+nsemantic1 = 0;
+nsemantic2 = 0;
 % Zahra Changes
 if strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_max_integral') || strcmp(objToUse, 'multi_additive_integral')
     switching_semantics = 'semantic1';
     if strcmp(switching_semantics, 'semantic1')
         fval1 = funfcn(v,varargin{:});
-        [fval1,j1] = sort(fval1);
+        [fsorting1,j1] = sort(fval1);
         v1 = v(:,j1);
         fval_saving1 = fval1;
         v_saving1 = v1;
+        ff1 = fval1;
         
     end
     switching_semantics = 'semantic2';
     if strcmp(switching_semantics, 'semantic2')
         fval2 = funfcn(v,varargin{:});
-        [fval2,j2] = sort(fval2);
+        [fsorting2,j2] = sort(fval2);
         v2 = v(:,j2);
         fval_saving2 = fval2;
         v_saving2 = v2;
+        ff2 = fval2;
     end
     
-    
-    ranking_done = 0;
-    A1 = zeros(length(v1),length(v1));
-    A2 = zeros(length(v2),length(v2));
-    
-    for i=1 : length(v1)
-        for k=1 : length(v1)
-            if i == k
-                A1(i,k) = 0;
-                A2(i,k) = 0;
-                
-            else
-                if  fval1(1,i) < fval1(1,k)
-                    A1(i,k)= A1(i,k) + 1;
-                elseif fval1(1,i) == fval1(1,k)
-                    A1(i,k)= A1(i,k) +0.5;
-                else
-                    % Do nothing
-                end
-                if  fval2(1,i) < fval2(1,k)
-                    A2(i,k)= A2(i,k) + 1;
-                elseif fval2(1,i) == fval2(1,k)
-                    A2(i,k)= A2(i,k) +0.5;
-                else
-                    % Do nothing
-                end
-            end
-        end
-    end
-    
-    
-    %A(i,k) = 0.5;
-    
-    
-    A = A1+A2;
-    for i=1 : length(x)
-        for k=1 : length(x)
-            if i == k
-                A(i,k) = 0.5;
-            end
-        end
-    end
-    
-    A = (A)^5;
-    for i=1 : length(x)
-        R(1,i) = sum (A(i,:));
-    end
-    
-    [maxValue,maxIndex] = sort (R(1,:), 'descend');
-    
-    for i=1 : length(R(1,:))
-        if (maxIndex(1,i) == j1(1,i)) && (maxIndex(1,i) ~= j2(1,i))
-            switching_semantics = 'semantic1';
-            fv = fval1;
-            v = v1;
-            ranking_done = 1;
-            break;
-        elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i))
-            switching_semantics = 'semantic2';
-            fv = fval2;
-            v = v2;
-            ranking_done = 1;
-            break;
-        end
+    if (fsorting1(1,1) < 0)
+        switching_semantics = 'semantic1';
+        fv = fval1;
+        % v = v1;
+        ranking_done = 1;
+        switching = 1;
+        nsemantic1 = nsemantic1 +1;
+        
+    elseif (fsorting2(1,1) < 0)
+        switching_semantics = 'semantic2';
+        fv = fval2;
+        %v = v2;
+        ranking_done = 1;
+        switching = 2;
+        nsemantic2 = nsemantic2 +1;
+        
+        
+        
+    else
+         ranking_done = 0;
+%         A1 = zeros(length(v),length(v));
+%         A2 = zeros(length(v),length(v));
+%         
+%         for i=1 : length(v)
+%             for k=1 : length(v)
+%                 if i == k
+%                     A1(i,k) = 0;
+%                     A2(i,k) = 0;
+%                     %digit(6)
+%                     
+%                 else
+%                     
+%                     if  ((fval1(1,i) - fval1(1,k) < 0.0000001))
+%                         
+%                         A1(i,k)= A1(i,k) + 0.5;
+%                     elseif (fval1(1,i)  < fval1(1,k))
+%                         A1(i,k)= A1(i,k) + 1;
+%                     else
+%                         % Do nothing
+%                     end
+%                     if  ((fval1(1,i) - fval1(1,k)) < 0.0000001)
+%                         A2(i,k)= A2(i,k) + 0.5;
+%                     elseif (fval2(1,i) < fval2(1,k))
+%                         A2(i,k)= A2(i,k) + 1;
+%                     else
+%                         % Do nothing
+%                     end
+%                 end
+%             end
+%         end
+%         
+%         
+%         %A(i,k) = 0.5;
+%         
+%         
+%         A = A1+A2;
+%         for i=1 : length(v)
+%             for k=1 : length(v)
+%                 if i == k
+%                     A(i,k) = 0.5;
+%                 end
+%             end
+%         end
+%         
+%         A = (A)^5;
+%         for i=1 : length(v)
+%             R(1,i) = sum (A(i,:));
+%         end
+%         
+%         [maxValue,maxIndex] = sort (R(1,:), 'descend');
+%         
+%         for i=1 : length(R(1,:))
+%             if (maxIndex(1,i) == j1(1,i)) && (maxIndex(1,i) ~= j2(1,i))
+%                 switching_semantics = 'semantic1';
+%                 fv = fval1;
+%                 %v = v1;
+%                 ranking_done = 1;
+%                 switching = 1;
+%                 nsemantic1 = nsemantic1 +1;
+%                 break;
+%             elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i))
+%                 switching_semantics = 'semantic2';
+%                 fv = fval2;
+%                 %v = v2;
+%                 ranking_done = 1;
+%                 switching = 2;
+%                 nsemantic2 = nsemantic2 +1;
+%                 break;
+%             end
+%         end
     end
     
     if  (ranking_done == 1)
         % Do-nothing
         
     elseif (ranking_done == 0)
-        average1 = mean (fval1(:));
-        average2 = mean (fval2(:));
-        var1 = 0;
-        var2 = 0;
+                average1 = mean (fval1(:));
+                average2 = mean (fval2(:));
+                var1 = 0;
+                var2 = 0;
         
-        for i = 1: length (fval1)
-            var1 = var1 + (fval1(:,i) - average1)^2;
-            var2 = var2 + (fval2(:,i) - average2)^2;
-        end
-        variance1 = var1 / length (fval1);
-        variance2 = var2 / length (fval2);
+                for i = 1: length (ff1)
+                    var1 = var1 + (ff1(:,i) - average1)^2;
+                    var2 = var2 + (ff2(:,i) - average2)^2;
+                end
+                variance1 = var1 / length (ff1);
+                variance2 = var2 / length (ff2);
+        
         
         if variance1 > variance2
             switching_semantics = 'semantic1';
             fv = fval1;
-            v = v1;
-            
+            %v = v1;
+            nsemantic1 = nsemantic1 +1;
         else
             switching_semantics = 'semantic2';
             fv = fval2;
-            v = v2;
+            %v = v2;
+            nsemantic2 = nsemantic2 +1;
+%         elseif switching == 1
+%             switching_semantics = 'semantic1';
+%             fv = fval1;
+%             %v = v1;
+%             nsemantic1 = nsemantic1 +1;
+%             
+%         else
+%             switching_semantics = 'semantic2';
+%             fv = fval2;
+%             %v = v2;
+%             nsemantic2 = nsemantic2 +1;
         end
     end
     
@@ -416,27 +460,27 @@ elseif strcmp(objToUse, 'multi_all')
     
     
     ranking_done = 0;
-    A1 = zeros(length(v1),length(v1));
-    A2 = zeros(length(v2),length(v2));
+    A1 = zeros(length(vv1),length(vv1));
+    A2 = zeros(length(vv2),length(vv2));
     A3 = zeros(length(v3),length(v3));
-    for i=1 : length(v1)
-        for k=1 : length(v1)
+    for i=1 : length(vv1)
+        for k=1 : length(vv1)
             if i == k
                 A1(i,k) = 0;
                 A2(i,k) = 0;
                 A3(i,k) = 0;
                 
             else
-                if  fval1(1,i) < fval1(1,k)
+                if  fsorting1(1,i) < fsorting1(1,k)
                     A1(i,k)= A1(i,k) + 1;
-                elseif fval1(1,i) == fval1(1,k)
+                elseif fsorting1(1,i) == fsorting1(1,k)
                     A1(i,k)= A1(i,k) +0.5;
                 else
                     % Do nothing
                 end
-                if  fval2(1,i) < fval2(1,k)
+                if  fsorting2(1,i) < fsorting2(1,k)
                     A2(i,k)= A2(i,k) + 1;
-                elseif fval2(1,i) == fval2(1,k)
+                elseif fsorting2(1,i) == fsorting2(1,k)
                     A2(i,k)= A2(i,k) +0.5;
                 else
                     % Do nothing
@@ -457,8 +501,8 @@ elseif strcmp(objToUse, 'multi_all')
     
     
     A = A1+A2+A3;
-    for i=1 : length(x)
-        for k=1 : length(x)
+    for i=1 : length(v1)
+        for k=1 : length(v1)
             if i == k
                 A(i,k) = 0.5;
             end
@@ -466,7 +510,7 @@ elseif strcmp(objToUse, 'multi_all')
     end
     
     A = (A)^5;
-    for i=1 : length(x)
+    for i=1 : length(v1)
         R(1,i) = sum (A(i,:));
     end
     
@@ -478,18 +522,21 @@ elseif strcmp(objToUse, 'multi_all')
             fv = fval1;
             v = v1;
             ranking_done = 1;
+            switching = 1;
             break;
         elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i) && (maxIndex(1,i) ~= j3(1,i)))
             switching_semantics = 'semantic2';
             fv = fval2;
             v = v2;
             ranking_done = 1;
+            switching = 2;
             break;
         elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) ~= j2(1,i) && (maxIndex(1,i) == j3(1,i)))
-            switching_semantics = 'semantic2';
-            fv = fval2;
-            v = v2;
+            switching_semantics = 'semantic3';
+            fv = fval3;
+            v = v3;
             ranking_done = 1;
+            switching = 3;
             break;
             
         end
@@ -500,31 +547,31 @@ elseif strcmp(objToUse, 'multi_all')
         
     elseif (ranking_done == 0)
         
-        average1 = mean (fval1(:));
-        average2 = mean (fval2(:));
-        average3 = mean (fval3(:));
-        var1 = 0;
-        var2 = 0;
-        var3 = 0;
-        for i = 1: length (fval1)
-            var1 = var1 + (fval1(:,i) - average1)^2;
-            var2 = var2 + (fval2(:,i) - average2)^2;
-            var3 = var3 + (fval3(:,i) - average3)^2;
-        end
+        %         average1 = mean (fval1(:));
+        %         average2 = mean (fval2(:));
+        %         average3 = mean (fval3(:));
+        %         var1 = 0;
+        %         var2 = 0;
+        %         var3 = 0;
+        %         for i = 1: length (ff1)
+        %             var1 = var1 + (ff1(:,i) - average1)^2;
+        %             var2 = var2 + (ff2(:,i) - average2)^2;
+        %             var3 = var3 + (fval3(:,i) - average3)^2;
+        %         end
+        %
+        %         variance1 = var1 / length (ff1);
+        %         variance2 = var2 / length (ff2);
+        %         variance3 = var3 / length (fval3);
+        %
+        %         variance = [variance1, variance2, variance3];
+        %         maxVariance = max(variance(1,:));
         
-        variance1 = var1 / length (fval1);
-        variance2 = var2 / length (fval2);
-        variance3 = var3 / length (fval3);
-        
-        variance = [variance1, variance2, variance3];
-        maxVariance = max(variance(1,:));
-        
-        if (maxVariance == variance1)
+        if (switching == 1)
             switching_semantics = 'semantic1';
             fv = fval1;
             v = v1;
             
-        elseif (maxVariance == variance2)
+        elseif (switching == 2)
             switching_semantics = 'semantic2';
             fv = fval2;
             v = v2;
@@ -662,71 +709,108 @@ while func_evals < maxfun && itercount < maxiter
     
     % Zahra Changes
     if strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_max_integral') || strcmp(objToUse, 'multi_additive_integral')
-        
         if strcmp(switching_semantics, 'semantic1')
             if strcmp(how,'shrink')
-                fval_saving1(:,end+1:end+length(v)-1)= fv(:,2:end);
-                v_saving1(:,end+1:end+length(v)-1) = v(:,2:end);
-                [fval_saving1,j1] = sort(fval_saving1);
-                v_saving1 = v_saving1(:,j1);
+                fval_saving1(:,end+1:end+length(v))= fv;
+                v_saving1(:,end+1:end+length(v)) = v;
+                ff1 = fv;
+                vv1 = v;
+                [ff1,j1] = sort(ff1(1,:));
+                vv1 = vv1(:,j1);
+                [fval_saving1,jj1] = sort(fval_saving1);
+                v_saving1 = v_saving1(:,jj1);
                 fval1 = fval_saving1(:,1:n+1);
                 v1 = v_saving1(:,1:n+1);
                 switching_semantics = 'semantic2';
-                fval_saving2(:,end+1:end+length(v)-1)= funfcn(v(:,2:end),varargin{:});
-                v_saving2(:,end+1:end+length(v)-1)= v(:,2:end);
-                [fval_saving2,j2] = sort(fval_saving2);
-                v_saving2 = v_saving2(:,j2);
+                z2 = funfcn(v,varargin{:});
+                fval_saving2(:,end+1:end+length(v))= z2;
+                v_saving2(:,end+1:end+length(v))= v;
+                ff2 = z2;
+                vv2 = v;
+                [ff2,j2] = sort(ff2(1,:));
+                vv2 = vv2(:,j2);
+                [fval_saving2,jj2] = sort(fval_saving2);
+                v_saving2 = v_saving2(:,jj2);
                 fval2 = fval_saving2(:,1:n+1);
                 v2 = v_saving2(:,1:n+1);
-                saving_ponits = saving_ponits + n;
+                saving_ponits = saving_ponits + n+1;
                 
             else
                 
                 fval_saving1(:,saving_ponits)= fv(:,end);
                 v_saving1(:,saving_ponits) = v(:,end);
-                [fval_saving1,j1] = sort(fval_saving1);
-                v_saving1 = v_saving1(:,j1);
+                ff1 = fv;
+                vv1 = v;
+                [ff1,j1] = sort(ff1(1,:));
+                vv1 = vv1(:,j1);
+                [fval_saving1,jj1] = sort(fval_saving1);
+                v_saving1 = v_saving1(:,jj1);
                 fval1 = fval_saving1(:,1:n+1);
                 v1 = v_saving1(:,1:n+1);
                 switching_semantics = 'semantic2';
                 fval_saving2(:,saving_ponits)= funfcn(v(:,end),varargin{:});
                 v_saving2(:,saving_ponits) = v(:,end);
-                [fval_saving2,j2] = sort(fval_saving2);
-                v_saving2 = v_saving2(:,j2);
+                ff2 = funfcn(v,varargin{:});
+                vv2 = v;
+                [ff2,j2] = sort(ff2(1,:));
+                vv2 = vv2(:,j2);
+                
+                [fval_saving2,jj2] = sort(fval_saving2);
+                v_saving2 = v_saving2(:,jj2);
                 fval2 = fval_saving2(:,1:n+1);
                 v2 = v_saving2(:,1:n+1);
                 saving_ponits = saving_ponits + 1;
             end
         else
             if strcmp(how,'shrink')
-                fval_saving2(:,end+1:end+length(v)-1)= fv(:,2:end);
-                v_saving2(:,end+1:end+length(v)-1) = v(:,2:end);
-                [fval_saving2,j2] = sort(fval_saving2);
-                v_saving2 = v_saving2(:,j2);
+                fval_saving2(:,end+1:end+length(v))= fv;
+                v_saving2(:,end+1:end+length(v)) = v;
+               
+                ff2 = fv;
+                vv2 = v;
+                [ff2,j2] = sort(ff2(1,:));
+                vv2 = vv2(:,j2);
+                 [fval_saving2,jj2] = sort(fval_saving2);
+                v_saving2 = v_saving2(:,jj2);
                 fval2 = fval_saving2(:,1:n+1);
                 v2 = v_saving2(:,1:n+1);
                 switching_semantics = 'semantic1';
-                fval_saving1(:,end+1:end+length(v)-1)= funfcn(v(:,2:end),varargin{:});
-                v_saving1(:,end+1:end+length(v)-1) = v(:,2:end);
-                [fval_saving1,j1] = sort(fval_saving1);
-                v_saving1 = v_saving1(:,j1);
+                z1 = funfcn(v,varargin{:});
+                fval_saving1(:,end+1:end+length(v))= z1;
+                v_saving1(:,end+1:end+length(v)) = v;
+                ff1 = z1;
+                vv1 = v;
+                [ff1,j1] = sort(ff1(1,:));
+                vv1 = vv1(:,j1);
+                [fval_saving1,jj1] = sort(fval_saving1);
+                v_saving1 = v_saving1(:,jj1);
                 fval1 = fval_saving1(:,1:n+1);
                 v1 = v_saving1(:,1:n+1);
-                saving_ponits = saving_ponits + n;
+                saving_ponits = saving_ponits + n+1;
                 
             else
                 
                 fval_saving2(:,saving_ponits)= fv(:,end);
                 v_saving2(:,saving_ponits) = v(:,end);
-                [fval_saving2,j2] = sort(fval_saving2);
-                v_saving2 = v_saving2(:,j2);
+                ff2 = fv;
+                vv2 = v;
+                [ff2,j2] = sort(ff2(1,:));
+                vv2 = vv2(:,j2);
+                
+                [fval_saving2,jj2] = sort(fval_saving2);
+                v_saving2 = v_saving2(:,jj2);
                 fval2 = fval_saving2(:,1:n+1);
                 v2 = v_saving2(:,1:n+1);
                 switching_semantics = 'semantic1';
                 fval_saving1(:,saving_ponits)= funfcn(v(:,end),varargin{:});
                 v_saving1(:,saving_ponits) = v(:,end);
-                [fval_saving1,j1] = sort(fval_saving1);
-                v_saving1 = v_saving1(:,j1);
+                ff1 = funfcn(v,varargin{:});
+                vv1 = v;
+                [ff1,j1] = sort(ff1(1,:));
+                vv1 = vv1(:,j1);
+                
+                [fval_saving1,jj1] = sort(fval_saving1);
+                v_saving1 = v_saving1(:,jj1);
                 fval1 = fval_saving1(:,1:n+1);
                 v1 = v_saving1(:,1:n+1);
                 saving_ponits = saving_ponits + 1;
@@ -734,130 +818,224 @@ while func_evals < maxfun && itercount < maxiter
                 
             end
         end
-        
-        
-        ranking_done = 0;
-        A1 = zeros(length(v1),length(v1));
-        A2 = zeros(length(v2),length(v2));
-        
-        for i=1 : length(v1)
-            for k=1 : length(v1)
-                if i == k
-                    A1(i,k) = 0;
-                    A2(i,k) = 0;
-                    
-                else
-                    if  fval1(1,i) < fval1(1,k)
-                        A1(i,k)= A1(i,k) + 1;
-                    elseif fval1(1,i) == fval1(1,k)
-                        A1(i,k)= A1(i,k) +0.5;
-                    else
-                        % Do nothing
-                    end
-                    if  fval2(1,i) < fval2(1,k)
-                        A2(i,k)= A2(i,k) + 1;
-                    elseif fval2(1,i) == fval2(1,k)
-                        A2(i,k)= A2(i,k) +0.5;
-                    else
-                        % Do nothing
-                    end
-                end
-            end
-        end
-        
-        
-        %A(i,k) = 0.5;
-        
-        
-        A = A1+A2;
-        for i=1 : length(x)
-            for k=1 : length(x)
-                if i == k
-                    A(i,k) = 0.5;
-                end
-            end
-        end
-        
-        A = (A)^5;
-        for i=1 : length(x)
-            R(1,i) = sum (A(i,:));
-        end
-        
-        [maxValue,maxIndex] = sort (R(1,:), 'descend');
-        
-        for i=1 : length(R(1,:))
-            if (maxIndex(1,i) == j1(1,i)) && (maxIndex(1,i) ~= j2(1,i))
-                switching_semantics = 'semantic1';
-                fv = fval1;
-                v = v1;
-                ranking_done = 1;
-                break;
-            elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i))
-                switching_semantics = 'semantic2';
-                fv = fval2;
-                v = v2;
-                ranking_done = 1;
-                break;
-            end
+        %             else
+        %                 z1 = fv(:,end);
+        %                 fval_saving1(:,saving_ponits)= z1;
+        %                 v_saving1(:,saving_ponits) = v(:,end);
+        %                 fsorting1 = fv;
+        %                 fsorting1(1,end) = z1;
+        %                 vsorting1 = v;
+        %                 [fval_saving1,j1] = sort(fval_saving1);
+        %                 v_saving1 = v_saving1(:,j1);
+        %                 fval1 = fval_saving1(:,1:n+1);
+        %                 v1 = v_saving1(:,1:n+1);
+        %                 switching_semantics = 'semantic2';
+        %                 z2 = funfcn(v(:,end),varargin{:});
+        %                 fval_saving2(:,saving_ponits)= z2;
+        %                 v_saving2(:,saving_ponits) = v(:,end);
+        %                 fsorting2 = fv;
+        %                 vsorting2 = v;
+        %                 [fval_saving2,j2] = sort(fval_saving2);
+        %                 v_saving2 = v_saving2(:,j2);
+        %                 fval2 = fval_saving2(:,1:n+1);
+        %                 v2 = v_saving2(:,1:n+1);
+        %                 saving_ponits = saving_ponits + 1;
+        %             end
+        %         else
+        %             if strcmp(how,'shrink')
+        %                 fval_saving2(:,end+1:end+length(v))= fv;
+        %                 v_saving2(:,end+1:end+length(v)) = v;
+        %                 fsorting2 = fv;
+        %                 vsorting2 = v;
+        %                 [fval_saving2,j2] = sort(fval_saving2);
+        %                 v_saving2 = v_saving2(:,j2);
+        %                 fval2 = fval_saving2(:,1:n+1);
+        %                 v2 = v_saving2(:,1:n+1);
+        %                 switching_semantics = 'semantic1';
+        %                 fval_saving1(:,end+1:end+length(v))= funfcn(v,varargin{:});
+        %                 v_saving1(:,end+1:end+length(v)) = v;
+        %                 [fval_saving1,j1] = sort(fval_saving1);
+        %                 v_saving1 = v_saving1(:,j1);
+        %                 fval1 = fval_saving1(:,1:n+1);
+        %                 v1 = v_saving1(:,1:n+1);
+        %                 saving_ponits = saving_ponits + n +1;
+        %
+        %             else
+        %
+        %                 fval_saving2(:,saving_ponits)= fv(:,end);
+        %                 v_saving2(:,saving_ponits) = v(:,end);
+        %                 [fval_saving2,j2] = sort(fval_saving2);
+        %                 v_saving2 = v_saving2(:,j2);
+        %                 fval2 = fval_saving2(:,1:n+1);
+        %                 v2 = v_saving2(:,1:n+1);
+        %                 switching_semantics = 'semantic1';
+        %                 fval_saving1(:,saving_ponits)= funfcn(v(:,end),varargin{:});
+        %                 v_saving1(:,saving_ponits) = v(:,end);
+        %                 [fval_saving1,j1] = sort(fval_saving1);
+        %                 v_saving1 = v_saving1(:,j1);
+        %                 fval1 = fval_saving1(:,1:n+1);
+        %                 v1 = v_saving1(:,1:n+1);
+        %                 saving_ponits = saving_ponits + 1;
+        %
+        %
+        %             end
+        %        end
+        ranking_done =0;
+        if (ff1(1,1) < 0)
+            switching_semantics = 'semantic1';
+            fv = fval1;
+            v = v1;
+            ranking_done = 1;
+            switching = 1;
+            nsemantic1 = nsemantic1 +1;
+            
+        elseif (ff2(1,1) < 0)
+            switching_semantics = 'semantic2';
+            fv = fval2;
+            v = v2;
+            ranking_done = 1;
+            switching = 2;
+            nsemantic2 = nsemantic2 +1;
+        else
+            
+%             ranking_done = 0;
+%             A1 = zeros(length(vv1),length(vv1));
+%             A2 = zeros(length(vv2),length(vv2));
+%             
+%             for i=1 : length(vv1)
+%                 for k=1 : length(vv1)
+%                     if i == k
+%                         A1(i,k) = 0;
+%                         A2(i,k) = 0;
+%                         
+%                     else
+%                         if  ff1(1,i) < ff1(1,k)
+%                             A1(i,k)= A1(i,k) + 1;
+%                         elseif (ff1(1,i) - ff1(1,k) < 0.0000001)
+%                             A1(i,k)= A1(i,k) +0.5;
+%                         else
+%                             % Do nothing
+%                         end
+%                         if  ff2(1,i) < ff2(1,k)
+%                             A2(i,k)= A2(i,k) + 1;
+%                         elseif (ff2(1,i) - ff2(1,k) < 0.0000001)
+%                             A2(i,k)= A2(i,k) +0.5;
+%                         else
+%                             % Do nothing
+%                         end
+%                     end
+%                 end
+%             end
+%             
+%             
+%             %A(i,k) = 0.5;
+%             
+%             
+%             A = A1+A2;
+%             for i=1 : length(v1)
+%                 for k=1 : length(v1)
+%                     if i == k
+%                         A(i,k) = 0.5;
+%                     end
+%                 end
+%             end
+%             
+%             A = (A)^5;
+%             for i=1 : length(v1)
+%                 R(1,i) = sum (A(i,:));
+%             end
+%             
+%             [maxValue,maxIndex] = sort (R(1,:), 'descend');
+%             
+%             for i=1 : length(R(1,:))
+%                 if (maxIndex(1,i) == j1(1,i)) && (maxIndex(1,i) ~= j2(1,i))
+%                     switching_semantics = 'semantic1';
+%                     fv = fval1;
+%                     v = v1;
+%                     ranking_done = 1;
+%                     switching = 1;
+%                     nsemantic1 = nsemantic1 +1;
+%                     break;
+%                 elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i))
+%                     switching_semantics = 'semantic2';
+%                     fv = fval2;
+%                     v = v2;
+%                     ranking_done = 1;
+%                     switching = 2;
+%                     nsemantic2 = nsemantic2 +1;
+%                     break;
+%                 end
+%             end
         end
         
         if  (ranking_done == 1)
             % Do-nothing
             
         elseif (ranking_done == 0)
-            average1 = mean (fval1(:));
-            average2 = mean (fval2(:));
-            var1 = 0;
-            var2 = 0;
+                        average1 = mean (fval1(:));
+                        average2 = mean (fval2(:));
+                        var1 = 0;
+                        var2 = 0;
             
-            for i = 1: length (fval1)
-                var1 = var1 + (fval1(:,i) - average1)^2;
-                var2 = var2 + (fval2(:,i) - average2)^2;
-            end
-            variance1 = var1 / length (fval1);
-            variance2 = var2 / length (fval2);
-            
+                        for i = 1: length (ff1)
+                            var1 = var1 + (ff1(:,i) - average1)^2;
+                            var2 = var2 + (ff2(:,i) - average2)^2;
+                        end
+                        variance1 = var1 / length (ff1);
+                        variance2 = var2 / length (ff2);
             
             if variance1 > variance2
                 switching_semantics = 'semantic1';
                 fv = fval1;
                 v = v1;
-                
+                nsemantic1 = nsemantic1 +1;
             else
                 switching_semantics = 'semantic2';
                 fv = fval2;
                 v = v2;
+                nsemantic2 = nsemantic2 +1;
             end
+%             elseif switching == 2
+%                 switching_semantics = 'semantic1';
+%                 fv = fval1;
+%                 v = v1;
+%                 nsemantic1 = nsemantic1 +1;
+%             else
+%                 switching_semantics = 'semantic2';
+%                 fv = fval2;
+%                 v = v2;
+%                 nsemantic2 = nsemantic2 +1;
+%             end
             
         end
     elseif strcmp(objToUse, 'multi_all')
         
         if strcmp(how,'shrink')
             switching_semantics = 'semantic1';
-            fval_saving1(:,end+1:end+length(v)-1)= funfcn(v(:,2:end),varargin{:});
-            v_saving1(:,end+1:end+length(v)-1) = v(:,2:end);
+            fval_saving1(:,end+1:end+length(v))= funfcn(v,varargin{:});
+            v_saving1(:,end+1:end+length(v)) = v;
             [fval_saving1,j1] = sort(fval_saving1);
             v_saving1 = v_saving1(:,j1);
             fval1 = fval_saving1(:,1:n+1);
             v1 = v_saving1(:,1:n+1);
             
             switching_semantics = 'semantic2';
-            fval_saving2(:,end+1:end+length(v)-1)= funfcn(v(:,2:end),varargin{:});
-            v_saving2(:,end+1:end+length(v)-1)= v(:,2:end);
+            fval_saving2(:,end+1:end+length(v))= funfcn(v,varargin{:});
+            v_saving2(:,end+1:end+length(v))= v;
             [fval_saving2,j2] = sort(fval_saving2);
             v_saving2 = v_saving2(:,j2);
             fval2 = fval_saving2(:,1:n+1);
             v2 = v_saving2(:,1:n+1);
             
             switching_semantics = 'semantic3';
-            fval_saving3(:,end+1:end+length(v)-1)= funfcn(v(:,2:end),varargin{:});
-            v_saving3(:,end+1:end+length(v)-1)= v(:,2:end);
+            fval_saving3(:,end+1:end+length(v))= funfcn(v,varargin{:});
+            v_saving3(:,end+1:end+length(v))= v;
             [fval_saving3,j3] = sort(fval_saving3);
             v_saving3 = v_saving3(:,j3);
             fval3 = fval_saving3(:,1:n+1);
             v3 = v_saving3(:,1:n+1);
             
-            saving_ponits = saving_ponits + n;
+            saving_ponits = saving_ponits + n +1;
             
         else
             switching_semantics = 'semantic1';
@@ -890,27 +1068,27 @@ while func_evals < maxfun && itercount < maxiter
         
         
         ranking_done = 0;
-        A1 = zeros(length(v1),length(v1));
-        A2 = zeros(length(v2),length(v2));
+        A1 = zeros(length(vv1),length(vv1));
+        A2 = zeros(length(vv2),length(vv2));
         A3 = zeros(length(v3),length(v3));
-        for i=1 : length(v1)
-            for k=1 : length(v1)
+        for i=1 : length(vv1)
+            for k=1 : length(vv1)
                 if i == k
                     A1(i,k) = 0;
                     A2(i,k) = 0;
                     A3(i,k) = 0;
                     
                 else
-                    if  fval1(1,i) < fval1(1,k)
+                    if  fsorting1(1,i) < fsorting1(1,k)
                         A1(i,k)= A1(i,k) + 1;
-                    elseif fval1(1,i) == fval1(1,k)
+                    elseif fsorting1(1,i) == fsorting1(1,k)
                         A1(i,k)= A1(i,k) +0.5;
                     else
                         % Do nothing
                     end
-                    if  fval2(1,i) < fval2(1,k)
+                    if  fsorting2(1,i) < fsorting2(1,k)
                         A2(i,k)= A2(i,k) + 1;
-                    elseif fval2(1,i) == fval2(1,k)
+                    elseif fsorting2(1,i) == fsorting2(1,k)
                         A2(i,k)= A2(i,k) +0.5;
                     else
                         % Do nothing
@@ -931,8 +1109,8 @@ while func_evals < maxfun && itercount < maxiter
         
         
         A = A1+A2+A3;
-        for i=1 : length(x)
-            for k=1 : length(x)
+        for i=1 : length(v1)
+            for k=1 : length(v1)
                 if i == k
                     A(i,k) = 0.5;
                 end
@@ -940,7 +1118,7 @@ while func_evals < maxfun && itercount < maxiter
         end
         
         A = (A)^5;
-        for i=1 : length(x)
+        for i=1 : length(v1)
             R(1,i) = sum (A(i,:));
         end
         
@@ -952,18 +1130,21 @@ while func_evals < maxfun && itercount < maxiter
                 fv = fval1;
                 v = v1;
                 ranking_done = 1;
+                switching = 1;
                 break;
             elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) == j2(1,i) && (maxIndex(1,i) ~= j3(1,i)))
                 switching_semantics = 'semantic2';
                 fv = fval2;
                 v = v2;
                 ranking_done = 1;
+                switching = 2;
                 break;
             elseif (maxIndex(1,i) ~= j1(1,i)) && (maxIndex(1,i) ~= j2(1,i) && (maxIndex(1,i) == j3(1,i)))
-                switching_semantics = 'semantic2';
-                fv = fval2;
-                v = v2;
+                switching_semantics = 'semantic3';
+                fv = fval3;
+                v = v3;
                 ranking_done = 1;
+                switching = 3;
                 break;
                 
             end
@@ -973,31 +1154,31 @@ while func_evals < maxfun && itercount < maxiter
             % Do-nothing
             
         elseif (ranking_done == 0)
-            average1 = mean (fval1(:));
-            average2 = mean (fval2(:));
-            average3 = mean (fval3(:));
-            var1 = 0;
-            var2 = 0;
-            var3 = 0;
-            for i = 1: length (fval1)
-                var1 = var1 + (fval1(:,i) - average1)^2;
-                var2 = var2 + (fval2(:,i) - average2)^2;
-                var3 = var3 + (fval3(:,i) - average3)^2;
-            end
+            %             average1 = mean (fval1(:));
+            %             average2 = mean (fval2(:));
+            %             average3 = mean (fval3(:));
+            %             var1 = 0;
+            %             var2 = 0;
+            %             var3 = 0;
+            %             for i = 1: length (ff1)
+            %                 var1 = var1 + (ff1(:,i) - average1)^2;
+            %                 var2 = var2 + (ff2(:,i) - average2)^2;
+            %                 var3 = var3 + (fval3(:,i) - average3)^2;
+            %             end
+            %
+            %             variance1 = var1 / length (ff1);
+            %             variance2 = var2 / length (ff2);
+            %             variance3 = var3 / length (fval3);
+            %
+            %             variance = [variance1, variance2, variance3];
+            %             maxVariance = max(variance(1,:));
             
-            variance1 = var1 / length (fval1);
-            variance2 = var2 / length (fval2);
-            variance3 = var3 / length (fval3);
-            
-            variance = [variance1, variance2, variance3];
-            maxVariance = max(variance(1,:));
-            
-            if (maxVariance == variance1)
+            if (switching == 2)
                 switching_semantics = 'semantic1';
                 fv = fval1;
                 v = v1;
                 
-            elseif (maxVariance == variance2)
+            elseif (switching == 1)
                 switching_semantics = 'semantic2';
                 fv = fval2;
                 v = v2;
