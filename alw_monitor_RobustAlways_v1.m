@@ -63,6 +63,7 @@ end
 
 
 rho = min(valarray(1:end));
+%rho2 = max(valarray(1:end));
 
 if rho < 0
     % The spec fails - we will integrate over the faulty intervals
@@ -84,21 +85,36 @@ if rho < 0
     if valarray(end) < 0
         partialRob = partialRob + valarray(end)*(time_values(end) - time_values(end-1));
     end
-    
+%     
     % Assert that the partialRob is negative - otherwise our additive
     % semantics are not sound with regards to the standard semantics
     assert(partialRob < 0);
 else
     % The spec does not fail
-    % Take the inverse of the integral of the inverse
-    
-    % Do the actual calculations
-    % Note that all values in valarray are strictly positive
-    partialRob = 0;
-    for k = 1:numel(valarray)-1
-        partialRob = partialRob + valarray(k)*(time_values(k+1) - time_values(k));
+    if rho == 0
+        % Avoid division by zero: Just set the robustness to zero
+        partialRob = 0;
+    else
+        % Do the actual calculations
+        % Note that all values in valarray are strictly positive
+       %mean_all = mean(valarray(1:end));
+       
+      
+       maximum = max(valarray(1:end));
+       
+       
+       %maximum = max(valarray(1,1),valarray(1,end));
+        partialRob = 0;
+        for k = 1:numel(valarray)-1
+            partialRob = partialRob + ((1/(valarray(k))))*(time_values(k+1) - time_values(k));
+           % partialRob = partialRob/abs(valarray(k)-partialRob);
+        end
+        % Add the last time point as well
+        partialRob = partialRob + (1/(valarray(end)))*(time_values(end) - time_values(end-1));
+        %partialRob = max(rho,partialRob)/partialRob;
+       partialRob = (maximum)/partialRob;
+        % Calculate the reciprocal
+       %partialRob =sqrt (partialRob)/ mean_all;
     end
-    % Add the last time point as well
-    partialRob = partialRob + valarray(end)*(time_values(end) - time_values(end-1));
 end
 end
