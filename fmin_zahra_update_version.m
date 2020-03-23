@@ -275,8 +275,15 @@ end
 % end
 
 % sort so v(1,:) has the lowest function value
-[fv,j] = sort(fv);
-v = v(:,j);
+% fv(:,1) = fM;
+% fv(:,2) = fR;
+% fv(:,3) = fL;
+% v(:,1) = xM;
+% v(:,2) = xR;
+% v(:,3) = xL;
+% 
+% [fv,j] = sort(fv(1,:));
+% v = v(:,j);
 
 how = 'initial simplex';
 itercount = itercount + 1;
@@ -318,34 +325,37 @@ exitflag = 1;
 % The iteration stops if the maximum number of iterations or function evaluations 
 % are exceeded
 
-fsaving_min = fM;
-xsaving_min = xM;
-
+fsaving_min = fv(:,1);
+xsaving_min = v(:,1);
+func_evals = func_evals+2;
+    
 while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
-    fsaving_min = fM;
-    xsaving_min = xM;
+
+    
+%    fsaving_min = fM;
+%    xsaving_min = xM;
+    
     if (func_evals > maxfun)
+        changing = 0;
         break
     end
 
-    
     if (xL == xM & xR == xM)
+        changing = 0;
         break
     end
     
-    if (changing == 0)
-        [xM,fM, xL, fL, xR, fR] = random_points(funfcn, xM, fM, lb, ub);
-    end
+%     if (changing == 0)
+%         [xM,fM, xL, fL, xR, fR] = random_points(funfcn, xM, fM, lb, ub);
+%     end
     
-    xNew1 = (xL+xM)/2;
-    xNew2 = (xM+xR)/2;
+%     xNew1 = (xL+xM)/2;
+%     xNew2 = (xM+xR)/2;
     
     %% Calculating Obj Fun for two new points:
-    fxNew1 = funfcn(xNew1);
-    fxNew2 = funfcn(xNew2);
+%     fxNew1 = funfcn(xNew1);
+%     fxNew2 = funfcn(xNew2);
     changing = 0;
-    
-    func_evals = func_evals+1;
     
     
     %% points have a V-shape; (xM,fM) is best (line 21)
@@ -353,12 +363,28 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
         
         if (xM-xL) <= (xR-xM)
             
+            xNew2 = (xR+xM)/2;
+            fxNew2 = funfcn(xNew2);
+
             %% replacing xR with xNew2 if fM <= fxNew2
             if fM <= fxNew2
        
-                if fM < fsaving_min
-                    changing = 0;
-                    break
+%                 fv(:,end) = fxNew2;
+%             v(:,end) = xNew2;
+%             [fv,j] = sort(fv(1,:));
+%             v = v(:,j);
+            
+            if fM < fsaving_min
+                
+                fR = fxNew2;
+                xR = xNew2;
+                func_evals = func_evals+1;
+                changing = 0;
+            
+                fsaving_min = fM;
+                xsaving_min = xM;
+                break;
+            
                 
                 else
                     
@@ -371,9 +397,21 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
                 %% replacing xL with fM and fM with fxNew2
             else
                 
-                if fxNew2 < fsaving_min
-                    
+%                 fv(:,end) = fxNew2;
+%             v(:,end) = xNew2;
+%             [fv,j] = sort(fv(1,:));
+%             v = v(:,j);
+            
+            if fxNew2 < fsaving_min
                     changing = 0;
+                    fsaving_min = fxNew2;
+                    xsaving_min = xNew2; 
+%                     fL = fM;
+%                     xL = xM;
+%                     fM = fxNew2;
+%                     xM = xNew2;
+                    func_evals = func_evals+1;
+
                     break
                     
                 else
@@ -390,13 +428,27 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
             
             %% if (xM-xL) <= (xR-xM) does not hold, then
         else
-            
+            xNew1 = (xL+xM)/2;
+            fxNew1 = funfcn(xNew1);
             %% replacing xR with xNew1 if fM <= fxNew1
             if fxNew1 <= fM
                 
-                if fxNew1 < fsaving_min
-                    
+%             fv(:,end) = fxNew1;
+%             v(:,end) = xNew1;
+%             [fv,j] = sort(fv(1,:));
+%             v = v(:,j);
+            
+            if fxNew1 < fsaving_min
                     changing = 0;
+                    fsaving_min = fxNew1;
+                    xsaving_min = xNew1;
+           
+%                     fR = fM;
+%                     xR = xM;
+%                     fM = fxNew1;
+%                     xM = xNew1;
+                    func_evals = func_evals+1;
+%                    changing = 1;
                     break
                    
                 else
@@ -412,22 +464,37 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
                 
             else
                 
-                if fM < fsaving_min
-                
+%                 fv(:,end) = fxNew1;
+%             v(:,end) = xNew1;
+%             [fv,j] = sort(fv(1,:));
+%             v = v(:,j);
+            
+            if fM < fsaving_min
+                    changing = 0;
+                    fsaving_min = fM;
+                    xsaving_min = xM;
+%                 fL = fxNew1;
+%                 xL = xNew1;
+                func_evals = func_evals+1;
+                %changing = 0;
+               break
+               
+                else
+                    
                 fL = fxNew1;
                 xL = xNew1;
                 func_evals = func_evals+1;
                 changing = 1;
-                
-                else
-                    changing = 0;
-                    break
+                   
                 end
             end
         end
         
         %% points have a /-, \-, or /\-shape; (xM,fM) is not best (line 27).
     elseif fL < fM
+        
+        xNew1 = (xL+xM)/2;
+        fxNew1 = funfcn(xNew1);
         
         if fxNew1 < fL
             %% replacing fR with fM and fM with fxNew1
@@ -436,16 +503,47 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
             fM = fxNew1;
             xM = xNew1;
             func_evals = func_evals+1;
-            changing = 1;
-            
-            %% Else do nothing;
-        else
-            func_evals = func_evals+1;
             changing = 0;
+            
+            
+            fv(:,1) = fM;
+fv(:,2) = fR;
+fv(:,3) = fL;
+v(:,1) = xM;
+v(:,2) = xR;
+v(:,3) = xL;
+
+[fv,j] = sort(fv(1,:));
+v = v(:,j);
+            
+            if fv(:,1) < fsaving_min
+                    
+                    fsaving_min = fv(:,1);
+                    xsaving_min = v(:,1);
+            end
+            changing = 0;
+                    break;
+            %% Else do nothing;
+            
+        else
+            changing = 1;
+            func_evals = func_evals+1;
+            fR = fM;
+            xR = xM;
+            fM = fxNew1;
+            xM = xNew1;
+            %changing = 1;
+%             if fM < fsaving_min
+%             fsaving_min = fM;
+%             xsaving_min = xM;
+%             end
             % break;
             
-        end
-    else
+            end
+        
+    else 
+        xNew2 = (xR+xM)/2;
+        fxNew2 = funfcn(xNew2);
         %% replacing fL with fM and fM with fxNew2
         if fxNew2 < fR
             
@@ -455,17 +553,48 @@ while func_evals < maxfun && itercount < maxiter && fsaving_min > 0
             xM = xNew2;
             func_evals = func_evals+1;
             changing = 1;
-            
+            fv(:,1) = fM;
+fv(:,2) = fR;
+fv(:,3) = fL;
+v(:,1) = xM;
+v(:,2) = xR;
+v(:,3) = xL;
+
+[fv,j] = sort(fv(1,:));
+v = v(:,j);
+            changing = 0;
+            if fv(:,1) < fsaving_min
+                    
+                    fsaving_min = fv(:,1);
+                    xsaving_min = v(:,1);
+            end
+            break;
             %% Else do nothing;
         else
+            fL = fM;
+            xL = xM;
+            fM = fxNew2;
+            xM = xNew2;
             func_evals = func_evals+1;
-            changing = 0;
+            changing = 1;
+%             if fM < fsaving_min
+%             fsaving_min = fM;
+%             xsaving_min = xM;
+%             end
+            %func_evals = func_evals+1;
+            %changing = 0;
             %break;
             
-        end
+            end            
+            
+        
+        
+        
     end
-    [fv,j] = sort(fv);
-    v = v(:,j);
+    fv = fsaving_min;
+    v = xsaving_min;
+%    [fv,j] = sort(fv);
+%    v = v(:,j);
     itercount = itercount + 1;
     if prnt == 3
         fprintf(' %5.0f        %5.0f     %12.6g         %s\n', itercount, func_evals, fv(1), how)
@@ -640,18 +769,19 @@ pos_slope_rand = randi(length(slope_random)); % Index (or position) of 10 random
 slope = slope_random(pos_slope_rand); % Pick one slope (according to the index is chosen )
 
 %% Note: It is not necessary the random point starts passing M at the begining:
-y = slope.* xM + 10 * rand(1, 10); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+y = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
 %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
 pos_y = randi(length(y(1,:))); % Index (or position) of 10 random samples.
 xR = y(:,pos_y); % Pick one point that pass M and xR.
 %xR(xR < lb) = lb(xR < lb);  xR(xR > ub) = ub(xR > ub); % Force the sample points to be in the range.
 
+%xL = xM - xR;
+% y1 = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+% %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
+% pos_y1 = randi(length(y(1,:))); % Index (or position) of 10 random samples.
+% xL = y1(:,pos_y1); % Pick one point that pass M and xR.
+% %xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
 
-y1 = slope.* xR + 10 * rand(1, 10); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
-%y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
-pos_y1 = randi(length(y(1,:))); % Index (or position) of 10 random samples.
-xL = y1(:,pos_y1); % Pick one point that pass M and xR.
-%xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
 
 %% This part is written to map xR to one edge.
 % uplow = {lb, ub}; % Take lower and upper line
@@ -665,13 +795,11 @@ xL = y1(:,pos_y1); % Pick one point that pass M and xR.
 % else
 %     xR(pos_low_up,1)= ub(pos_low_up,1); % else the upper is chosen, map xR to that.
 % end
-
-%% Finding the third point in the line that pass from M and xR:
-%dis = xM - xR; % the distance between M to xR.
-%xL = xM + dis; % New point is generated.
+% 
+% % Finding the third point in the line that pass from M and xR:
+dis = xM - xR; % the distance between M to xR.
+xL = xM + dis; % New point is generated.
 
 %% Calculating Obj Func for all three points:
-
 fR = funfcn(xR);
 fL = funfcn(xL);
-
