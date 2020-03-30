@@ -560,365 +560,415 @@ classdef BreachProblem < BreachStatus
                     res.bestRob = Result.f_k;
                     
                 case 'snobfit'
-                    global objToUse;
-                    global switching_semantics;
                     % SNOBFIT
                     % Install latest SNOBFIT, but MINQ for Matlab 5
                     % The following is mostly copied from
                     % snobfit/snobtest.m (some things changed)
-                    file = 'snobfit_data';
+                   
                     fcn = 'snobfit_wrapper';
                     fac = 0;        % factor for multiplicative perturbation of the data
                     ncall = this.max_obj_eval;   % limit on the number of function calls
-                    u = this.lb;
-                    v = this.ub;
-                    fglob = -0.01;
-                    n = length(u);  % dimension of the problem
-                    % the following are meaningful default values
-                    npoint = 1;   % number of random start points to be generated
-                    nreq = (n+6)/2;     % no. of points to be generated in each call to SNOBFIT
-                    if nargin < 2
+                    lb = this.lb;
+                    ub = this.ub;
+                    ncall = this.max_obj_eval;
+                    %                     fglob = -0.01;
+                    %                     n = length(u);  % dimension of the problem
+                    %                     % the following are meaningful default values
+                    %                     npoint = 1;   % number of random start points to be generated
+                    %                     nreq = n+6;     % no. of points to be generated in each call to SNOBFIT
+                   % if nargin < 2
                         % No startSample given
                         startSample = testronGetNewSample([this.lb this.ub]);
-                    end
-                    x = startSample';
+                    %end
+                    x = startSample;
                     % starting points in [u,v]
-                    dx = (v-u)'*1.e-5; % resolution vector
-                    p = 0.5;        % probability of generating a point of class 4
-                    prt = 0;        % print level
-                    counting = 1;
-                    % prt = 0 prints ncall, xbest and fbest if xbest has
-                    %         changed
-                    % prt = 1 in addition prints the points suggested by
-                    %         SNOBFIT, their model function values and
-                    %         classes after each call to SNOBFIT
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    % end of data to be adapted
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %%%%% Zahra's Changing:
-                        if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
-                            
-                            switching_semantics = 'semantic1';
-                             if strcmp(switching_semantics, 'semantic1')
-                    for j=1:npoint
-                        fval1(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
-                        % computation of the function values (if necessary, with additive
-                        % noise)
-                    end
                     
-                             end
-                     switching_semantics = 'semantic2';
-                    if strcmp(switching_semantics, 'semantic2')
-                    for j=1:npoint
-                        fval2(j,:) = [feval(fcn,x(j,:),this)+fac*randn max(sqrt(eps),3*fac)];
-                        % computation of the function values (if necessary, with additive
-                        % noise)
-                    end
-                    end
+                    xM =x; % Middle point in the mentioned range.
+                    fM = feval(fcn,xM,this);
+                    changing = 2;
+                    %[xM,fM, xL, fL, xR, fR] = random_points(funfcn, xM, fM, lb, ub);
                     
-                  
+                    slope_up = 1; % lower range for slope. slope should be in Range [-1,1].
+                    slope_down = -1; % upper range for slope. slope be in Range [-1,1].
+                    slope_random = (slope_up - slope_down).*rand(1,10)+slope_down; % 10 random samples in Range [-1,1].
+                    pos_slope_rand = randi(length(slope_random)); % Index (or position) of 10 random samples.
+                    slope = slope_random(pos_slope_rand); % Pick one slope (according to the index is chosen )
                     
-                        end
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    ncall0 = npoint;   % function call counter
-                    params = struct('bounds',{u,v},'nreq',nreq,'p',p); % input structure
-                    % repeated calls to Snobfit
-                    while ncall0 < ncall % repeat till ncall function values are reached
-                        % (if the stopping criterion is not fulfilled first)
-                        if ncall0 == npoint  % initial call
-                            [request1,xbest1,fbest1] = snobfit(file,x,fval1,params,dx);
-                            [request2,xbest2,fbest2] = snobfit(file,x,fval2,params,dx);
-                            if fbest1 > fbest2
-                                fbest = fbest1;
-                                xbest = xbest1; 
-                            else
-                                fbest = fbest2;
-                                xbest = xbest2;
-                            end
-                            
-                            %ncall0,xbest,fbest;
-                        else                 % continuation call
-                            [request1,xbest1,fbest1] = snobfit(file,x1,fval1,params);
-                            [request2,xbest2,fbest2] = snobfit(file,x2,fval2,params);
-                        end
-                        if prt>0, request1, end
-                        if prt>0, request2, end
-                        clear x
-                        clear fval1
-                        clear fval2
+                    %% Note: It is not necessary the random point starts passing M at the begining:
+                    y = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+                    %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
+                    pos_y = randi(length(y(1,:))); % Index (or position) of 10 random samples.
+                    xR = y(:,pos_y); % Pick one point that pass M and xR.
+                    %xR(xR < lb) = lb(xR < lb);  xR(xR > ub) = ub(xR > ub); % Force the sample points to be in the range.
+                    
+                    %xL = xM - xR;
+                    % y1 = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+                    % %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
+                    % pos_y1 = randi(length(y(1,:))); % Index (or position) of 10 random samples.
+                    % xL = y1(:,pos_y1); % Pick one point that pass M and xR.
+                    % %xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
+                    
+                    
+                    %% This part is written to map xR to one edge.
+                    % uplow = {lb, ub}; % Take lower and upper line
+                    % rand_uplow = randi([1, 2], 1); % Get a 1 or 2 randomly (place of them).
+                    % thispoint = uplow(rand_uplow); % Get lower or upper.
+                    % randomEdge = cell2mat(thispoint(:,1)); % Because the thispoint is saved in cell, transform it to mat.
+                    % pos_low_up = randi(length(randomEdge(:,1))); % Index (or position) of one row of lower or upper (It depends which one is choden.)
+                    %
+                    % if randomEdge == lb
+                    %     xR(pos_low_up,1)= lb(pos_low_up,1); % If the lower is chosen, map xR to that.
+                    % else
+                    %     xR(pos_low_up,1)= ub(pos_low_up,1); % else the upper is chosen, map xR to that.
+                    % end
+                    %
+                    % % Finding the third point in the line that pass from M and xR:
+                    dis = xM - xR; % the distance between M to xR.
+                    xL = xM + dis; % New point is generated.
+                    
+                    xR(xR < lb) = lb(xR < lb);  xR(xR > ub) = ub(xR > ub); % Force the sample points to be in the range.
+                    xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
+                    
+                    %% Calculating Obj Func for all three points:
+                    fR = feval(fcn,xR,this);
+                    fL = feval(fcn,xL,this);
+                    n = numel(x);
+                    %maxfun = 200*n;
+                    func_evals = 0;
+                    
+                    xbest = xM;
+                    fbest = fM;
+                    func_evals = func_evals+2;
+                    
+                    while func_evals <  ncall                         
                         
-                        %%%%% Zahra's Changing:
-                        if strcmp(objToUse, 'multi_max_marv') || strcmp(objToUse, 'multi_max_additive') || strcmp(objToUse, 'multi_additive_marv')
+                        %    fbest = fM;
+                        %    xbest = xM;
+                        
+                        if (func_evals > 1001)
+                            changing = 0;
+                            break
+                        end
+                        
+                        if (xL == xM & xR == xM)
+                            changing = 0;
+                            %break
+                        end
+                        
+                        if (changing == 1)
+                            %if nargin < 2
+                                % No startSample given
+                                startSample = testronGetNewSample([this.lb this.ub]);
+                           % end
+                            x = startSample;  
+                            xM =x; % Middle point in the mentioned range.
+                            fM = feval(fcn,xM,this);
+                            changing = 2;
+                            slope_up = 1; % lower range for slope. slope should be in Range [-1,1].
+                            slope_down = -1; % upper range for slope. slope be in Range [-1,1].
+                            slope_random = (slope_up - slope_down).*rand(1,10)+slope_down; % 10 random samples in Range [-1,1].
+                            pos_slope_rand = randi(length(slope_random)); % Index (or position) of 10 random samples.
+                            slope = slope_random(pos_slope_rand); % Pick one slope (according to the index is chosen )
+                            lb = this.lb;
                             
-                            switching_semantics = 'semantic1';
-                            %switching_semantics
-                            if strcmp(switching_semantics, 'semantic1')
-                                for j= 1:size(request1,1) 
-                                    x1(j,:) = request1(j,1:n);
-                                    fval1(j,:) = [feval(fcn,x1(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                    % computation of the (perturbed) function values at the suggested points
-                                end
-
-%                                 jj = 1;
-%                                 for j= size(request1,1)+1: size(request1,1)+size(request2,1) 
-%                                     x(j,:) = request2(jj,1:n);
-%                                     fval1(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-%                                     jj = jj +1;
-%                                     % computation of the (perturbed) function values at the suggested points
-%                                 end
+                            %% Note: It is not necessary the random point starts passing M at the begining:
+                            y = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+                            %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
+                            pos_y = randi(length(y(1,:))); % Index (or position) of 10 random samples.
+                            xR = y(:,pos_y); % Pick one point that pass M and xR.
+                            %xR(xR < lb) = lb(xR < lb);  xR(xR > ub) = ub(xR > ub); % Force the sample points to be in the range.
+                            
+                            %xL = xM - xR;
+                            % y1 = slope.* xM + 5 * rand(1, 50); % The linear line formula passing from middle point: y = slope * x + c. Generating 10 sample points.
+                            % %y(y < lb) = lb(y < lb);  y(y > ub) = ub(y > ub); % Force the sample points to be in the range.
+                            % pos_y1 = randi(length(y(1,:))); % Index (or position) of 10 random samples.
+                            % xL = y1(:,pos_y1); % Pick one point that pass M and xR.
+                            % %xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
+                            
+                            
+                            %% This part is written to map xR to one edge.
+                            % uplow = {lb, ub}; % Take lower and upper line
+                            % rand_uplow = randi([1, 2], 1); % Get a 1 or 2 randomly (place of them).
+                            % thispoint = uplow(rand_uplow); % Get lower or upper.
+                            % randomEdge = cell2mat(thispoint(:,1)); % Because the thispoint is saved in cell, transform it to mat.
+                            % pos_low_up = randi(length(randomEdge(:,1))); % Index (or position) of one row of lower or upper (It depends which one is choden.)
+                            %
+                            % if randomEdge == lb
+                            %     xR(pos_low_up,1)= lb(pos_low_up,1); % If the lower is chosen, map xR to that.
+                            % else
+                            %     xR(pos_low_up,1)= ub(pos_low_up,1); % else the upper is chosen, map xR to that.
+                            % end
+                            %
+                            % % Finding the third point in the line that pass from M and xR:
+                            dis = xM - xR; % the distance between M to xR.
+                            xL = xM + dis; % New point is generated.
+                            xR(xR < lb) = lb(xR < lb);  xR(xR > ub) = ub(xR > ub); % Force the sample points to be in the range.
+                            xL(xL < lb) = lb(xL < lb);  xL(xL > ub) = ub(xL > ub); % Force the sample points to be in the range.
+                    
+                            %% Calculating Obj Func for all three points:
+                            fR = feval(fcn,xR,this);
+                            fL = feval(fcn,xL,this);
+                            n = numel(x);
+                            maxfun = 200*n;
+                            
+                            
+                            
+                            func_evals = func_evals+2;
+                            
+%                             if fM < fbest
+%                                 xbest = xM;
+%                                 fbest = fM;
+%                             else
+%                             end
+                        end
+                        %     xNew1 = (xL+xM)/2;
+                        %     xNew2 = (xM+xR)/2;
+                        
+                        %% Calculating Obj Fun for two new points:
+                        %     fxNew1 = funfcn(xNew1);
+                        %     fxNew2 = funfcn(xNew2);
+                        changing = 0;
+                        
+                        
+                        %% points have a V-shape; (xM,fM) is best (line 21)
+                        if (fM <= fL && fM <= fR)
+                            
+                            if (xM-xL) <= (xR-xM)
                                 
-                                [fbestn1,jbest1] = min(fval1(:,1)); % best function value
-%                                 [fsort1,jsort1] = sort(fval1(:,1)); % best function value                                
-%                                 x1 = x(jsort1,:);
-%                                 f1 = fval1(jsort1,:);
-                            end
-                            
-                            switching_semantics = 'semantic2';
-                            if strcmp(switching_semantics, 'semantic2')
-                                for j= 1:size(request2,1) 
-                                    x2(j,:) = request1(j,1:n);
-                                    fval2(j,:) = [feval(fcn,x2(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                    % computation of the (perturbed) function values at the suggested points
-                                end
-%                                jj = 1;
-%                                 for j= size(request1,1)+1: size(request1,1)+size(request2,1) 
-%                                     x(j,:) = request2(jj,1:n);
-%                                     fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-%                                     jj = jj + 1;
-%                                     % computation of the (perturbed) function values at the suggested points
-%                                 end
+                                xNew2 = (xR+xM)/2;
+                                fxNew2 = feval(fcn,xNew2,this);
                                 
-                                [fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                               % [fsort2,jsort2] = sort(fval2(:,1)); % best function value 
-%                                 x2 = x(jsort2,:);
-%                                  f2 = fval2(jsort2,:);             
-                            end
-                            
-                            average1 = mean (fval1(:,1));
-                            average2 = mean (fval2(:,1));
-                            var1 = 0;
-                            var2 = 0;
-                            
-                            for i = 1: size(fval1,1)
-                                var1 = var1 + (fval1(i,1) - average1)^2;
-                            end
-                            
-                            for i = 1: size(fval2,1)
-                                var2 = var2 + (fval2(i,1) - average2)^2;
-                            end
-                            
-                            
-                            variance1 = var1 / length (fval1);
-                            variance2 = var2 / length (fval2);
-                            
-                            if (variance1 ~= 0 && variance2 ~= 0)
-                                if variance1 > variance2
-                                    % switching_semantics = 'semantic1';
-%                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
-%                                     f = fval1;
-                                   fbestn = fbestn1;
-                                   jbest = jbest1;
-                                    x = x1;
-                                elseif variance2 > variance1
-%                                     switching_semantics = 'semantic2';
-%                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
-%                                     f = fval2;
-                                    fbestn = fbestn2;
-                                    jbest = jbest2;
-                                    x = x2;
-                                elseif variance1 == variance2
-                                    if average1 < average2
-%                                         switching_semantics = 'semantic1';
-%                                         ncall0 = ncall0 + size(fval1,1); % update function call counter
-%                                         f = fval1;
-                                        fbestn = fbestn1;
-                                        jbest = jbest1;
-                                        x = x1;
+                                %% replacing xR with xNew2 if fM <= fxNew2
+                                if fM <= fxNew2
+                                    
+                                    %                 fv(:,end) = fxNew2;
+                                    %             v(:,end) = xNew2;
+                                    %             [fv,j] = sort(fv(1,:));
+                                    %             v = v(:,j);
+                                    
+                                    if fM < fbest
+                                        
+                                        fR = fxNew2;
+                                        xR = xNew2;
+                                        func_evals = func_evals+1;
+                                        changing = 0;
+                                        
+                                        fbest = fM;
+                                        xbest = xM;
+                                        %       break;
+                                        
+                                        
                                     else
-%                                         switching_semantics = 'semantic2';
-%                                         ncall0 = ncall0 + size(fval2,1); % update function call counter
-%                                         f = fval2;
-                                        fbestn = fbestn2;
-                                        jbest = jbest2;
-                                        x = x2;
+                                        
+                                        fR = fxNew2;
+                                        xR = xNew2;
+                                        func_evals = func_evals+1;
+                                        changing = 1;
+                                        
+                                    end
+                                    %% replacing xL with fM and fM with fxNew2
+                                else
+                                    
+                                    %                 fv(:,end) = fxNew2;
+                                    %             v(:,end) = xNew2;
+                                    %             [fv,j] = sort(fv(1,:));
+                                    %             v = v(:,j);
+                                    
+                                    if fxNew2 < fbest
+                                        changing = 0;
+                                        fbest = fxNew2;
+                                        xbest = xNew2;
+                                        %                     fL = fM;
+                                        %                     xL = xM;
+                                        %                     fM = fxNew2;
+                                        %                     xM = xNew2;
+                                        func_evals = func_evals+1;
+                                        
+                                        %          break
+                                        
+                                    else
+                                        
+                                        fL = fM;
+                                        xL = xM;
+                                        fM = fxNew2;
+                                        xM = xNew2;
+                                        func_evals = func_evals+1;
+                                        changing = 1;
+                                        
                                     end
                                 end
-                            elseif (variance1 == 0 && variance2 ~= 0)
-%                                 switching_semantics = 'semantic2';
-%                                 ncall0 = ncall0 + size(fval2,1); % update function call counter
-%                                 f = fval2;
-                                fbestn = fbestn2;
-                                jbest = jbest2;
-                                x = x2;
-                            elseif (variance1 ~= 0 && variance2 == 0)
-%                                 switching_semantics = 'semantic1';
-%                                 ncall0 = ncall0 + size(fval1,1); % update function call counter
-%                                 f = fval1;
-                                fbestn = fbestn1;
-                                jbest = jbest1;
-                                x = x1;
                                 
-                            elseif (variance1 == 0 && variance2 == 0) || (variance1 == variance2)
-                                if average1 < average2
-%                                     switching_semantics = 'semantic1';
-%                                     ncall0 = ncall0 + size(fval1,1); % update function call counter
-%                                     f = fval1;
-                                    fbestn = fbestn1;
-                                    jbest = jbest1;
-                                    x = x1;
+                                %% if (xM-xL) <= (xR-xM) does not hold, then
+                            else
+                                xNew1 = (xL+xM)/2;
+                                fxNew1 = feval(fcn,xNew1,this);
+                                %% replacing xR with xNew1 if fM <= fxNew1
+                                if fxNew1 <= fM
+                                    
+                                    %             fv(:,end) = fxNew1;
+                                    %             v(:,end) = xNew1;
+                                    %             [fv,j] = sort(fv(1,:));
+                                    %             v = v(:,j);
+                                    
+                                    if fxNew1 < fbest
+                                        changing = 0;
+                                        fbest = fxNew1;
+                                        xbest = xNew1;
+                                        
+                                        %                     fR = fM;
+                                        %                     xR = xM;
+                                        %                     fM = fxNew1;
+                                        %                     xM = xNew1;
+                                        func_evals = func_evals+1;
+                                        %                    changing = 1;
+                                        %         break
+                                        
+                                    else
+                                        
+                                        fR = fM;
+                                        xR = xM;
+                                        fM = fxNew1;
+                                        xM = xNew1;
+                                        func_evals = func_evals+1;
+                                        changing = 1;
+                                        
+                                    end
+                                    
                                 else
-%                                     switching_semantics = 'semantic2';
-%                                     ncall0 = ncall0 + size(fval2,1); % update function call counter
-%                                     f = fval2;
-                                    fbestn = fbestn2;
-                                    jbest = jbest2;
-                                    x = x2;
+                                    
+                                    %                 fv(:,end) = fxNew1;
+                                    %             v(:,end) = xNew1;
+                                    %             [fv,j] = sort(fv(1,:));
+                                    %             v = v(:,j);
+                                    
+                                    if fM < fbest
+                                        changing = 0;
+                                        fbest = fM;
+                                        xbest = xM;
+                                        %                 fL = fxNew1;
+                                        %                 xL = xNew1;
+                                        func_evals = func_evals+1;
+                                        %changing = 0;
+                                        %   break
+                                        
+                                    else
+                                        
+                                        fL = fxNew1;
+                                        xL = xNew1;
+                                        func_evals = func_evals+1;
+                                        changing = 1;
+                                        
+                                    end
                                 end
                             end
-                            ncall0 = ncall0 + size(fval1,1) + size(fval2,1);
-                            %fbests = [fbest1, fbest2];
-%                             if fbestn1 < fbestn2
-%                                 fbestn = fbestn1;
-%                                 jbest = jbest1;
-%                             else
-%                                 fbestn = fbestn2;
-%                                 jbest = jbest2;
-%                             end
-%                             
                             
-                        elseif strcmp(objToUse, 'multi_all')
+                            %% points have a /-, \-, or /\-shape; (xM,fM) is not best (line 27).
+                        elseif fL < fM
                             
-                            switching_semantics = 'semantic1';
-                            if strcmp(switching_semantics, 'semantic1')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
-                                    fval1(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                    % computation of the (perturbed) function values at the suggested points
+                            xNew1 = (xL+xM)/2;
+                            fxNew1 = feval(fcn,xNew1,this);
+                            
+                            if fxNew1 < fL
+                                %% replacing fR with fM and fM with fxNew1
+                                fR = fM;
+                                xR = xM;
+                                fM = fxNew1;
+                                xM = xNew1;
+                                func_evals = func_evals+1;
+                                changing = 1;
+                                
+                                
+                                fv(:,1) = fM;
+                                fv(:,2) = fR;
+                                fv(:,3) = fL;
+                                v(:,1) = xM;
+                                v(:,2) = xR;
+                                v(:,3) = xL;
+                                
+                                [fv,j] = sort(fv(1,:));
+                                v = v(:,j);
+                                
+                                if fv(:,1) < fbest
+                                    
+                                    fbest = fv(:,1);
+                                    xbest = v(:,1);
+                                    changing = 0;
                                 end
-                                
-                                [fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                
-                            end
-                            
-                            switching_semantics = 'semantic2';
-                            if strcmp(switching_semantics, 'semantic2')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
-                                    fval2(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                    % computation of the (perturbed) function values at the suggested points
-                                end
-                                
-                                [fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                
-                            end
-                            
-                            switching_semantics = 'semantic3';
-                            if strcmp(switching_semantics, 'semantic3')
-                                for j=1:size(request,1)
-                                    x(j,:) = request(j,1:n);
-                                    fval3(j,:) = [feval(fcn,x(j,:), this)+fac*randn max(sqrt(eps),3*fac)];
-                                    % computation of the (perturbed) function values at the suggested points
-                                end
-                                
-                                [fbestn3,jbest3] = min(fval3(:,1)); % best function value
-                                
-                            end
-                            
-                            average1 = mean (fval1(:,1));
-                            average2 = mean (fval2(:,1));
-                            average3 = mean (fval3(:,1));
-                            
-                            var1 = 0;
-                            var2 = 0;
-                            var3 = 0;
-                            
-                            for i = 1: size(fval1,1)
-                                var1 = var1 + (fval1(i,1) - average1)^2;
-                            end
-                            
-                            for i = 1: size(fval2,1)
-                                var2 = var2 + (fval2(i,1) - average2)^2;
-                            end
-                            
-                            for i = 1: size(fval3,1)
-                                var3 = var3 + (fval3(i,1) - average3)^2;
-                            end
-                            
-                            variance1 = var1 / length (fval1);
-                            variance2 = var2 / length (fval2);
-                            variance3 = var3 / length (fval3);
-                            
-                            variance = [variance1, variance2, variance3];
-                            maxVariance = max(variance(1,:));
-                            
-                            if (maxVariance == variance1)
-                                switching_semantics = 'semantic1';
-                                %[fbestn1,jbest1] = min(fval1(:,1)); % best function value
-                                f = fval1;
-                                %fbestn = fbestn1;
-                                %jbest = jbest1;
-                                ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                
-                            elseif (maxVariance == variance2)
-                                switching_semantics = 'semantic2';
-                                %[fbestn2,jbest2] = min(fval2(:,1)); % best function value
-                                f = fval2;
-                                %fbestn = fbestn2;
-                                %jbest = jbest2;
-                                ncall0 = ncall0 + size(fval2,1); % update function call counter
+                                %changing = 0;
+                                %       break;
+                                %% Else do nothing;
                                 
                             else
-                                switching_semantics = 'semantic3';
-                                %[fbestn3,jbest3] = min(fval3(:,1)); % best function value
-                                f = fval3;
-                                %fbestn = fbestn3;
-                                %jbest = jbest3;
-                                ncall0 = ncall0 + size(fval3,1); % update function call counter
+                                changing = 1;
+                                func_evals = func_evals+1;
+                                fR = fM;
+                                xR = xM;
+                                fM = fxNew1;
+                                xM = xNew1;
+                                %changing = 1;
+                                %             if fM < fbest
+                                %             fbest = fM;
+                                %             xbest = xM;
+                                %             end
+                                % break;
+                                
                             end
                             
-                            min_fbest = [fbestn1, fbestn2, fbestn3];
-                            min_obj = min(min_fbest(1,:));
-                            
-                            if (min_obj == fbestn1)
-                                fbestn = fbestn1;
-                                jbest = jbest1;
-                                %ncall0 = ncall0 + size(fval1,1); % update function call counter
-                                
-                            elseif (min_obj == fbestn2)
-                                fbestn = fbestn2;
-                                jbest = jbest2;
-                                %ncall0 = ncall0 + size(fval2,1); % update function call counter
-                                
-                            else
-                                fbestn = fbestn3;
-                                jbest = jbest3;
-                                %ncall0 = ncall0 + size(fval3,1); % update function call counter
-                            end
-                            
-                            
-                        end         
-                        
-                        if fbestn < fbest
-                            fbest = fbestn;
-                            xbest = x(jbest,:);
-                           % fval1 = (f1(1:(size(fval1)/2),:)); % best function value 
-                           % fval2 = (f2(1:(size(fval2)/2),:)); % best function value
-                          
-                           % x1 = x1 (1:(size(f1)/2),:);
-                           % x2 = x2 (1:(size(f2)/2),:);
-                            %ncall0,xbest,fbest % display current number of function values,
-                            % best point and function value if fbest has
-                            % changed
-                        end
-                        % check stopping criterion
-                        % if fglob == 0, stop if fbest < 1.e-5
-                        % otherwise, stop if (fbest-fglob)/abs(fglob) < 1.e-2
-                        if fglob
-                            if abs((fbest-fglob)/fglob) < 1.e-2,break,end
                         else
-                            if abs(fbest) < 1.e-5,break,end
+                            xNew2 = (xR+xM)/2;
+                            fxNew2 = feval(fcn,xNew2,this);
+                            %% replacing fL with fM and fM with fxNew2
+                            if fxNew2 < fR
+                                
+                                fL = fM;
+                                xL = xM;
+                                fM = fxNew2;
+                                xM = xNew2;
+                                func_evals = func_evals+1;
+                                changing = 1;
+                                fv(:,1) = fM;
+                                fv(:,2) = fR;
+                                fv(:,3) = fL;
+                                v(:,1) = xM;
+                                v(:,2) = xR;
+                                v(:,3) = xL;
+                                
+                                [fv,j] = sort(fv(1,:));
+                                v = v(:,j);
+                                
+                                if fv(:,1) < fbest
+                                    
+                                    fbest = fv(:,1);
+                                    xbest = v(:,1);
+                                    changing = 0;
+                                end
+                                % break;
+                                %% Else do nothing;
+                            else
+                                fL = fM;
+                                xL = xM;
+                                fM = fxNew2;
+                                xM = xNew2;
+                                func_evals = func_evals+1;
+                                changing = 1;
+                                %             if fM < fbest
+                                %             fbest = fM;
+                                %             xbest = xM;
+                                %             end
+                                %func_evals = func_evals+1;
+                                %changing = 0;
+                                %break;
+                                
+                            end
+                            
                         end
+                        if fbest < 0
+                            break;
+                        end
+                        %    fbest = fbest;
+                        %    xbest = xbest;
                     end
+                    
                     %ncall0,xbest,fbest  % show number of function values, best point and
                     % function value
                     res = struct('bestRob',[],'bestSample',[],'nTests',[],'bestCost',[],'paramVal',[],'falsified',[],'time',[]);
@@ -1235,7 +1285,7 @@ classdef BreachProblem < BreachStatus
         function [fval, cval] = objective_wrapper(this,x)
             % reset this.Spec
             this.Spec.ResetEval();
-            %global objToUse;
+            %            global objToUse;
             % objective_wrapper calls the objective function and wraps some bookkeeping
             if size(x,1) ~= numel(this.params)
                 x = x';
@@ -1266,21 +1316,23 @@ classdef BreachProblem < BreachStatus
                             idx=[];
                         end
                         
+                        % Zahra changes
                         if ~isempty(idx)
                             %fval(:,iter) = this.obj_log(:,idx);
                             [fval(:,iter), cval(:,iter)] = fun(iter);
                             this.time_spent = toc(this.time_start);
                             %this.LogX(x(:, iter), fval(:,iter), cval(:,iter));
                         else
-                            % calling actual objective function
+                            %                            calling actual objective function
                             [fval(:,iter), cval(:,iter)] = fun(iter);
                             
-                            % logging and updating best
+                            %                           logging and updating best
                             this.time_spent = toc(this.time_start);
                             this.LogX(x(:, iter), fval(:,iter), cval(:,iter));
-                            % update status
+                            %                          update status
                         end
                         
+                        % It is done.
                     end
                 else % Parallel case
                     
@@ -1310,7 +1362,6 @@ classdef BreachProblem < BreachStatus
             end
             
         end
-        
         
         function b = stopping(this)
             b = (this.time_spent >= this.max_time) ||...
