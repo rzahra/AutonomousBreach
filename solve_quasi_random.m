@@ -40,17 +40,47 @@ difF2 = (fval2(1,end)-fval2(1,1));
 
 dis1 = difF1/normX1;
 dis2 = difF2/normX2;
-
+done = 0;
 if dis1 > dis2
     switching_semantics = 'semantic1';
     res = res1;
+    done = 1;
     
 elseif dis1 < dis2
     switching_semantics = 'semantic2';
     res = res2;
+    done = 1;
+else
+    for k = 1:length(fval1(1,:))
+        
+        if fval1(1,k) < fval2(1,k)
+            
+            switching_semantics = 'semantic1';
+            res = res1;
+            done = 1;
+            break;
+            
+        elseif fval2(1,k) < fval1(1,k)
+            
+            switching_semantics = 'semantic2';
+            res = res2;
+            done = 1;
+            break;
+            
+        end
+        
+    end
+end
+
+if done == 1
+    
+else
+    switching_semantics = 'semantic1';
+    res = res1;
+    
 end
 
 this.add_res(res);
-
-
 end
+
+
